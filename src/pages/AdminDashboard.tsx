@@ -6,7 +6,14 @@ import TrendChart from '@/components/dashboard/TrendChart';
 import DepartmentPieChart from '@/components/dashboard/DepartmentPieChart';
 import FacultyTable from '@/components/dashboard/FacultyTable';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
-import { mockFaculty, mockFeedbacks, mockDepartmentStats, mockSemesterTrends } from '@/data/mockData';
+import {
+  mockFaculty,
+  mockFeedbacks,
+  mockDepartmentStatsByYear,
+  mockSemesterTrendsByYear,
+  yearQualityScores,
+  yearQualityTrends,
+} from '@/data/mockData';
 import { Users, MessageSquare, Star, TrendingUp, Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -21,12 +28,42 @@ import {
 const AdminDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [academicYear, setAcademicYear] = useState('2024-25');
 
-  // Calculate statistics
+  // Filter feedbacks by academic year
+  const yearFeedbacks = useMemo(() => {
+    return mockFeedbacks.filter(f => f.academicYear === academicYear);
+  }, [academicYear]);
+
+  // Get year-specific department stats and trends
+  const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
+  const semesterTrends = mockSemesterTrendsByYear[academicYear] || mockSemesterTrendsByYear['2024-25'];
+  const qualityScore = yearQualityScores[academicYear] || '89%';
+  const qualityTrend = yearQualityTrends[academicYear] || { value: 5, isPositive: true };
+
+  // Calculate statistics based on year-filtered feedbacks
   const totalFaculty = mockFaculty.length;
-  const totalFeedbacks = mockFaculty.reduce((acc, f) => acc + f.totalFeedbacks, 0);
-  const averageRating = (mockFaculty.reduce((acc, f) => acc + f.averageRating, 0) / totalFaculty).toFixed(2);
   const activeFaculty = mockFaculty.filter(f => f.status === 'active').length;
+  const totalFeedbacks = yearFeedbacks.length > 0
+    ? yearFeedbacks.length
+    : mockFaculty.reduce((acc, f) => acc + f.totalFeedbacks, 0);
+
+  const averageRating = useMemo(() => {
+    if (yearFeedbacks.length === 0) {
+      return (mockFaculty.reduce((acc, f) => acc + f.averageRating, 0) / totalFaculty).toFixed(2);
+    }
+    const avgPerFeedback = yearFeedbacks.map(f => {
+      const vals = Object.values(f.ratings);
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    });
+    return (avgPerFeedback.reduce((a, b) => a + b, 0) / avgPerFeedback.length).toFixed(2);
+  }, [yearFeedbacks, totalFaculty]);
+
+  const feedbackTrend = useMemo(() => {
+    if (academicYear === '2024-25') return { value: 12, isPositive: true };
+    if (academicYear === '2023-24') return { value: 6, isPositive: true };
+    return { value: -3, isPositive: false };
+  }, [academicYear]);
 
   // Filter faculty
   const filteredFaculty = useMemo(() => {
@@ -38,16 +75,16 @@ const AdminDashboard: React.FC = () => {
     });
   }, [searchQuery, departmentFilter]);
 
-  // Prepare chart data
-  const departmentChartData = mockDepartmentStats.map(d => ({
+  // Prepare chart data from year-specific stats
+  const departmentChartData = departmentStats.map(d => ({
     name: d.department.split(' ')[0],
     rating: d.averageRating,
   }));
 
-  const trendChartData = mockSemesterTrends.map(t => ({
+  const trendChartData = semesterTrends.map(t => ({
     name: t.semester.split(' ')[0] + "'" + t.semester.split(' ')[1].slice(2),
     value: t.averageRating,
-    value2: t.qualityScore / 20, // Scale to 5
+    value2: t.qualityScore / 20,
   }));
 
   const departments = [...new Set(mockFaculty.map(f => f.department))];
@@ -67,7 +104,7 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Academic Year:</span>
-            <Select defaultValue="2024-25">
+            <Select value={academicYear} onValueChange={setAcademicYear}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -92,9 +129,9 @@ const AdminDashboard: React.FC = () => {
           <StatCard
             title="Total Feedbacks"
             value={totalFeedbacks.toLocaleString()}
-            subtitle="This academic year"
+            subtitle={`Academic Year ${academicYear}`}
             icon={MessageSquare}
-            trend={{ value: 12, isPositive: true }}
+            trend={feedbackTrend}
           />
           <StatCard
             title="Average Rating"
@@ -105,10 +142,10 @@ const AdminDashboard: React.FC = () => {
           />
           <StatCard
             title="Quality Score"
-            value="89%"
+            value={qualityScore}
             subtitle="Institutional average"
             icon={TrendingUp}
-            trend={{ value: 5, isPositive: true }}
+            trend={qualityTrend}
           />
         </div>
 
@@ -117,12 +154,12 @@ const AdminDashboard: React.FC = () => {
           <PerformanceChart
             data={departmentChartData}
             title="Department-wise Performance"
-            subtitle="Average rating by department"
+            subtitle={`Average rating by department (${academicYear})`}
           />
           <TrendChart
             data={trendChartData}
             title="Rating Trends"
-            subtitle="Semester-wise performance trends"
+            subtitle={`Semester-wise performance trends (${academicYear})`}
             dataKey="value"
             dataKey2="value2"
           />
@@ -131,12 +168,12 @@ const AdminDashboard: React.FC = () => {
         {/* Secondary Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <DepartmentPieChart
-            data={mockDepartmentStats}
+            data={departmentStats}
             title="Faculty Distribution"
-            subtitle="By department"
+            subtitle={`By department (${academicYear})`}
           />
           <RecentFeedback
-            feedbacks={mockFeedbacks}
+            feedbacks={yearFeedbacks.length > 0 ? yearFeedbacks : mockFeedbacks}
             faculty={mockFaculty}
             className="lg:col-span-2"
           />
