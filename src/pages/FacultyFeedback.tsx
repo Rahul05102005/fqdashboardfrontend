@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import { useAuth } from '@/context/AuthContext';
-import { mockFaculty, mockFeedbacks } from '@/data/mockData';
-import { MessageSquare, Star, Calendar, ThumbsUp, ThumbsDown, TrendingUp } from 'lucide-react';
+import { mockFaculty, mockFeedbacks, monthlyCategoryAverages } from '@/data/mockData';
+import { MessageSquare, Star, Calendar, ThumbsUp, TrendingUp } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,17 +14,44 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { format } from 'date-fns';
+
+const MONTHS_2024 = [
+  'January 2024', 'February 2024', 'March 2024', 'April 2024',
+  'May 2024', 'June 2024', 'July 2024', 'August 2024',
+  'September 2024', 'October 2024', 'November 2024', 'December 2024',
+];
 
 const FacultyFeedback: React.FC = () => {
   const { user } = useAuth();
   const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
-  const facultyFeedbacks = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+  const [selectedMonth, setSelectedMonth] = useState('December 2024');
 
-  // If no specific feedbacks, use sample
-  const displayFeedbacks = facultyFeedbacks.length > 0 ? facultyFeedbacks : mockFeedbacks;
+  // Parse selected month to filter feedbacks
+  const filteredFeedbacks = useMemo(() => {
+    const [monthName, year] = selectedMonth.split(' ');
+    const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth();
+    const yearNum = parseInt(year);
 
-  // Calculate category averages
-  const categoryAverages = {
+    const facultyFeedbacks = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+    const allFeedbacks = facultyFeedbacks.length > 0 ? facultyFeedbacks : mockFeedbacks;
+
+    return allFeedbacks.filter(f => {
+      const d = new Date(f.submittedAt);
+      return d.getMonth() === monthIndex && d.getFullYear() === yearNum;
+    });
+  }, [selectedMonth, currentFaculty.id]);
+
+  // Use all faculty feedbacks if filtered returns empty for stats display
+  const allFacultyFeedbacks = useMemo(() => {
+    const fb = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+    return fb.length > 0 ? fb : mockFeedbacks;
+  }, [currentFaculty.id]);
+
+  const displayFeedbacks = filteredFeedbacks.length > 0 ? filteredFeedbacks : allFacultyFeedbacks;
+
+  // Get category averages for selected month
+  const categoryAverages = monthlyCategoryAverages[selectedMonth] || {
     teachingEffectiveness: 4.7,
     subjectKnowledge: 4.9,
     communication: 4.5,
@@ -34,6 +61,22 @@ const FacultyFeedback: React.FC = () => {
     assessmentFairness: 4.5,
     overallSatisfaction: 4.6,
   };
+
+  // Calculate dynamic stats based on month
+  const feedbackCount = filteredFeedbacks.length;
+  const avgRating = useMemo(() => {
+    const vals = Object.values(categoryAverages);
+    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+  }, [categoryAverages]);
+
+  const positivePct = useMemo(() => {
+    const aboveFour = Object.values(categoryAverages).filter(v => v >= 4.0).length;
+    return Math.round((aboveFour / Object.values(categoryAverages).length) * 100);
+  }, [categoryAverages]);
+
+  const improvementAreas = useMemo(() => {
+    return Object.values(categoryAverages).filter(v => v < 4.5).length;
+  }, [categoryAverages]);
 
   return (
     <DashboardLayout>
@@ -48,14 +91,15 @@ const FacultyFeedback: React.FC = () => {
               View and analyze student feedback on your courses
             </p>
           </div>
-          <Select defaultValue="Fall 2024">
-            <SelectTrigger className="w-40">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-48">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Fall 2024">Fall 2024</SelectItem>
-              <SelectItem value="Spring 2024">Spring 2024</SelectItem>
+              {MONTHS_2024.map(month => (
+                <SelectItem key={month} value={month}>{month}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -63,28 +107,28 @@ const FacultyFeedback: React.FC = () => {
         {/* Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total Feedbacks"
-            value={currentFaculty.totalFeedbacks}
-            subtitle="All time"
+            title="Feedbacks"
+            value={feedbackCount > 0 ? feedbackCount : currentFaculty.totalFeedbacks}
+            subtitle={feedbackCount > 0 ? selectedMonth : 'All time'}
             icon={MessageSquare}
           />
           <StatCard
             title="Average Rating"
-            value={currentFaculty.averageRating.toFixed(1)}
+            value={avgRating}
             subtitle="Out of 5.0"
             icon={Star}
             variant="success"
           />
           <StatCard
             title="Positive Feedback"
-            value="87%"
+            value={`${positivePct}%`}
             subtitle="Rating 4+ stars"
             icon={ThumbsUp}
             trend={{ value: 3, isPositive: true }}
           />
           <StatCard
             title="Improvement Areas"
-            value="2"
+            value={improvementAreas}
             subtitle="Categories below 4.5"
             icon={TrendingUp}
           />
@@ -92,7 +136,9 @@ const FacultyFeedback: React.FC = () => {
 
         {/* Category Breakdown */}
         <div className="dashboard-card">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Category Ratings</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Category Ratings — {selectedMonth}
+          </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {Object.entries(categoryAverages).map(([key, value]) => (
               <div key={key} className="space-y-2">

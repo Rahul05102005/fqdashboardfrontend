@@ -104,13 +104,25 @@ export const mockCourses: Course[] = [
   { id: 'CS101', code: 'CS101', name: 'Introduction to Programming', semester: 1, credits: 4, department: 'Computer Science' },
   { id: 'CS201', code: 'CS201', name: 'Data Structures', semester: 3, credits: 4, department: 'Computer Science' },
   { id: 'CS301', code: 'CS301', name: 'Algorithms', semester: 5, credits: 3, department: 'Computer Science' },
+  { id: 'CS302', code: 'CS302', name: 'Software Engineering', semester: 5, credits: 3, department: 'Computer Science' },
   { id: 'CS401', code: 'CS401', name: 'Machine Learning', semester: 7, credits: 4, department: 'Computer Science' },
+  { id: 'CS402', code: 'CS402', name: 'Artificial Intelligence', semester: 7, credits: 4, department: 'Computer Science' },
+  { id: 'CS403', code: 'CS403', name: 'Deep Learning', semester: 8, credits: 3, department: 'Computer Science' },
   { id: 'EC101', code: 'EC101', name: 'Basic Electronics', semester: 1, credits: 4, department: 'Electronics' },
+  { id: 'EC201', code: 'EC201', name: 'Analog Circuits', semester: 3, credits: 4, department: 'Electronics' },
+  { id: 'EC301', code: 'EC301', name: 'Digital Signal Processing', semester: 5, credits: 3, department: 'Electronics' },
+  { id: 'EC401', code: 'EC401', name: 'VLSI Design', semester: 7, credits: 4, department: 'Electronics' },
   { id: 'MA101', code: 'MA101', name: 'Engineering Mathematics I', semester: 1, credits: 4, department: 'Mathematics' },
+  { id: 'MA201', code: 'MA201', name: 'Engineering Mathematics II', semester: 3, credits: 4, department: 'Mathematics' },
+  { id: 'MA301', code: 'MA301', name: 'Probability & Statistics', semester: 5, credits: 3, department: 'Mathematics' },
   { id: 'PH101', code: 'PH101', name: 'Engineering Physics', semester: 1, credits: 3, department: 'Physics' },
+  { id: 'PH201', code: 'PH201', name: 'Quantum Mechanics', semester: 3, credits: 3, department: 'Physics' },
+  { id: 'PH301', code: 'PH301', name: 'Thermodynamics', semester: 5, credits: 3, department: 'Physics' },
+  { id: 'PH401', code: 'PH401', name: 'Optics', semester: 7, credits: 3, department: 'Physics' },
 ];
 
 export const mockFeedbacks: Feedback[] = [
+  // 2024-25 feedbacks
   {
     id: 'fb1',
     facultyId: 'f1',
@@ -148,7 +160,7 @@ export const mockFeedbacks: Feedback[] = [
       overallSatisfaction: 4.8,
     },
     comments: 'One of the best professors. Very engaging classes.',
-    submittedAt: '2024-12-14T14:20:00Z',
+    submittedAt: '2024-11-14T14:20:00Z',
     isAnonymous: true,
   },
   {
@@ -168,7 +180,189 @@ export const mockFeedbacks: Feedback[] = [
       overallSatisfaction: 4.3,
     },
     comments: 'Good content delivery but could be more interactive.',
-    submittedAt: '2024-12-13T09:15:00Z',
+    submittedAt: '2024-10-13T09:15:00Z',
+    isAnonymous: false,
+  },
+  {
+    id: 'fb4',
+    facultyId: 'f1',
+    courseId: 'CS301',
+    semester: 'Fall 2024',
+    academicYear: '2024-25',
+    ratings: {
+      teachingEffectiveness: 4.7,
+      subjectKnowledge: 4.9,
+      communication: 4.6,
+      punctuality: 4.8,
+      courseContent: 4.5,
+      studentEngagement: 4.3,
+      assessmentFairness: 4.6,
+      overallSatisfaction: 4.7,
+    },
+    comments: 'Great explanations of algorithm complexity. Would recommend.',
+    submittedAt: '2024-09-20T11:00:00Z',
+    isAnonymous: true,
+  },
+  {
+    id: 'fb5',
+    facultyId: 'f4',
+    courseId: 'MA101',
+    semester: 'Spring 2024',
+    academicYear: '2024-25',
+    ratings: {
+      teachingEffectiveness: 4.4,
+      subjectKnowledge: 4.9,
+      communication: 4.3,
+      punctuality: 4.6,
+      courseContent: 4.5,
+      studentEngagement: 4.2,
+      assessmentFairness: 4.4,
+      overallSatisfaction: 4.5,
+    },
+    comments: 'Solid mathematical foundation teaching. Assignments are challenging but fair.',
+    submittedAt: '2024-03-10T08:30:00Z',
+    isAnonymous: true,
+  },
+  {
+    id: 'fb6',
+    facultyId: 'f5',
+    courseId: 'PH101',
+    semester: 'Spring 2024',
+    academicYear: '2024-25',
+    ratings: {
+      teachingEffectiveness: 4.1,
+      subjectKnowledge: 4.7,
+      communication: 4.0,
+      punctuality: 4.3,
+      courseContent: 4.2,
+      studentEngagement: 3.9,
+      assessmentFairness: 4.3,
+      overallSatisfaction: 4.1,
+    },
+    comments: 'Knowledgeable but lectures can be dry. Needs more practical examples.',
+    submittedAt: '2024-04-22T15:45:00Z',
+    isAnonymous: false,
+  },
+  {
+    id: 'fb7',
+    facultyId: 'f6',
+    courseId: 'CS402',
+    semester: 'Fall 2024',
+    academicYear: '2024-25',
+    ratings: {
+      teachingEffectiveness: 5.0,
+      subjectKnowledge: 4.9,
+      communication: 4.8,
+      punctuality: 5.0,
+      courseContent: 4.9,
+      studentEngagement: 5.0,
+      assessmentFairness: 4.7,
+      overallSatisfaction: 4.9,
+    },
+    comments: 'Incredible AI course. Hands-on projects and cutting-edge content.',
+    submittedAt: '2024-08-18T13:10:00Z',
+    isAnonymous: true,
+  },
+  // 2023-24 feedbacks
+  {
+    id: 'fb8',
+    facultyId: 'f1',
+    courseId: 'CS101',
+    semester: 'Fall 2023',
+    academicYear: '2023-24',
+    ratings: {
+      teachingEffectiveness: 4.5,
+      subjectKnowledge: 4.8,
+      communication: 4.3,
+      punctuality: 4.5,
+      courseContent: 4.4,
+      studentEngagement: 4.2,
+      assessmentFairness: 4.3,
+      overallSatisfaction: 4.4,
+    },
+    comments: 'Very knowledgeable professor. Could use more real-world examples.',
+    submittedAt: '2023-11-20T10:00:00Z',
+    isAnonymous: true,
+  },
+  {
+    id: 'fb9',
+    facultyId: 'f2',
+    courseId: 'CS201',
+    semester: 'Spring 2023',
+    academicYear: '2023-24',
+    ratings: {
+      teachingEffectiveness: 4.6,
+      subjectKnowledge: 4.7,
+      communication: 4.7,
+      punctuality: 4.8,
+      courseContent: 4.5,
+      studentEngagement: 4.5,
+      assessmentFairness: 4.4,
+      overallSatisfaction: 4.6,
+    },
+    comments: 'Great course structure. Lab sessions are very helpful.',
+    submittedAt: '2023-04-15T14:00:00Z',
+    isAnonymous: false,
+  },
+  {
+    id: 'fb10',
+    facultyId: 'f3',
+    courseId: 'EC201',
+    semester: 'Fall 2023',
+    academicYear: '2023-24',
+    ratings: {
+      teachingEffectiveness: 4.0,
+      subjectKnowledge: 4.6,
+      communication: 3.8,
+      punctuality: 4.4,
+      courseContent: 4.1,
+      studentEngagement: 3.9,
+      assessmentFairness: 4.2,
+      overallSatisfaction: 4.0,
+    },
+    comments: 'Subject matter is complex. More visual aids would help.',
+    submittedAt: '2023-12-05T09:30:00Z',
+    isAnonymous: true,
+  },
+  // 2022-23 feedbacks
+  {
+    id: 'fb11',
+    facultyId: 'f1',
+    courseId: 'CS401',
+    semester: 'Fall 2022',
+    academicYear: '2022-23',
+    ratings: {
+      teachingEffectiveness: 4.3,
+      subjectKnowledge: 4.7,
+      communication: 4.2,
+      punctuality: 4.4,
+      courseContent: 4.3,
+      studentEngagement: 4.0,
+      assessmentFairness: 4.2,
+      overallSatisfaction: 4.3,
+    },
+    comments: 'Machine learning course is well designed but fast-paced.',
+    submittedAt: '2022-11-10T11:00:00Z',
+    isAnonymous: true,
+  },
+  {
+    id: 'fb12',
+    facultyId: 'f5',
+    courseId: 'PH201',
+    semester: 'Spring 2023',
+    academicYear: '2022-23',
+    ratings: {
+      teachingEffectiveness: 4.0,
+      subjectKnowledge: 4.5,
+      communication: 3.9,
+      punctuality: 4.2,
+      courseContent: 4.0,
+      studentEngagement: 3.8,
+      assessmentFairness: 4.1,
+      overallSatisfaction: 4.0,
+    },
+    comments: 'Quantum mechanics is hard but professor tries his best.',
+    submittedAt: '2023-03-25T16:00:00Z',
     isAnonymous: false,
   },
 ];
@@ -204,21 +398,157 @@ export const mockMetrics: InstructionalMetric[] = [
     evaluatedAt: '2024-12-20T00:00:00Z',
     evaluatedBy: 'admin1',
   },
+  {
+    id: 'm3',
+    facultyId: 'f1',
+    semester: 'Fall 2023',
+    academicYear: '2023-24',
+    teachingQualityScore: 88,
+    researchContribution: 82,
+    syllabusCompletion: 95,
+    attendanceCompliance: 92,
+    studentPassRate: 85,
+    innovativeTeaching: 84,
+    overallScore: 87,
+    evaluatedAt: '2023-12-20T00:00:00Z',
+    evaluatedBy: 'admin1',
+  },
+  {
+    id: 'm4',
+    facultyId: 'f2',
+    semester: 'Spring 2023',
+    academicYear: '2023-24',
+    teachingQualityScore: 90,
+    researchContribution: 75,
+    syllabusCompletion: 97,
+    attendanceCompliance: 95,
+    studentPassRate: 88,
+    innovativeTeaching: 90,
+    overallScore: 89,
+    evaluatedAt: '2023-06-20T00:00:00Z',
+    evaluatedBy: 'admin1',
+  },
 ];
 
-export const mockDepartmentStats: DepartmentStats[] = [
-  { department: 'Computer Science', facultyCount: 3, averageRating: 4.77, feedbackCount: 312 },
-  { department: 'Electronics', facultyCount: 1, averageRating: 4.30, feedbackCount: 245 },
-  { department: 'Mathematics', facultyCount: 1, averageRating: 4.50, feedbackCount: 178 },
-  { department: 'Physics', facultyCount: 1, averageRating: 4.20, feedbackCount: 312 },
-];
+// Academic year specific department stats
+export const mockDepartmentStatsByYear: Record<string, DepartmentStats[]> = {
+  '2024-25': [
+    { department: 'Computer Science', facultyCount: 3, averageRating: 4.77, feedbackCount: 312 },
+    { department: 'Electronics', facultyCount: 1, averageRating: 4.30, feedbackCount: 245 },
+    { department: 'Mathematics', facultyCount: 1, averageRating: 4.50, feedbackCount: 178 },
+    { department: 'Physics', facultyCount: 1, averageRating: 4.20, feedbackCount: 312 },
+  ],
+  '2023-24': [
+    { department: 'Computer Science', facultyCount: 3, averageRating: 4.55, feedbackCount: 280 },
+    { department: 'Electronics', facultyCount: 1, averageRating: 4.10, feedbackCount: 210 },
+    { department: 'Mathematics', facultyCount: 1, averageRating: 4.35, feedbackCount: 155 },
+    { department: 'Physics', facultyCount: 1, averageRating: 4.05, feedbackCount: 275 },
+  ],
+  '2022-23': [
+    { department: 'Computer Science', facultyCount: 2, averageRating: 4.40, feedbackCount: 240 },
+    { department: 'Electronics', facultyCount: 1, averageRating: 3.95, feedbackCount: 190 },
+    { department: 'Mathematics', facultyCount: 1, averageRating: 4.20, feedbackCount: 130 },
+    { department: 'Physics', facultyCount: 1, averageRating: 3.90, feedbackCount: 250 },
+  ],
+};
 
-export const mockSemesterTrends: SemesterTrend[] = [
-  { semester: 'Spring 2023', averageRating: 4.1, feedbackCount: 890, qualityScore: 82 },
-  { semester: 'Fall 2023', averageRating: 4.25, feedbackCount: 945, qualityScore: 85 },
-  { semester: 'Spring 2024', averageRating: 4.35, feedbackCount: 912, qualityScore: 87 },
-  { semester: 'Fall 2024', averageRating: 4.48, feedbackCount: 1047, qualityScore: 90 },
-];
+export const mockDepartmentStats: DepartmentStats[] = mockDepartmentStatsByYear['2024-25'];
+
+// Academic year specific semester trends
+export const mockSemesterTrendsByYear: Record<string, SemesterTrend[]> = {
+  '2024-25': [
+    { semester: 'Spring 2024', averageRating: 4.35, feedbackCount: 912, qualityScore: 87 },
+    { semester: 'Fall 2024', averageRating: 4.48, feedbackCount: 1047, qualityScore: 90 },
+  ],
+  '2023-24': [
+    { semester: 'Spring 2023', averageRating: 4.10, feedbackCount: 890, qualityScore: 82 },
+    { semester: 'Fall 2023', averageRating: 4.25, feedbackCount: 945, qualityScore: 85 },
+  ],
+  '2022-23': [
+    { semester: 'Spring 2022', averageRating: 3.90, feedbackCount: 780, qualityScore: 78 },
+    { semester: 'Fall 2022', averageRating: 4.05, feedbackCount: 850, qualityScore: 80 },
+  ],
+};
+
+export const mockSemesterTrends: SemesterTrend[] = mockSemesterTrendsByYear['2024-25'];
+
+// Year-specific quality scores
+export const yearQualityScores: Record<string, string> = {
+  '2024-25': '89%',
+  '2023-24': '84%',
+  '2022-23': '79%',
+};
+
+// Year-specific quality trends
+export const yearQualityTrends: Record<string, { value: number; isPositive: boolean }> = {
+  '2024-25': { value: 5, isPositive: true },
+  '2023-24': { value: 3, isPositive: true },
+  '2022-23': { value: -2, isPositive: false },
+};
+
+// Month-specific category averages for faculty feedback
+export const monthlyCategoryAverages: Record<string, Record<string, number>> = {
+  'January 2024': {
+    teachingEffectiveness: 4.5, subjectKnowledge: 4.7, communication: 4.3,
+    punctuality: 4.6, courseContent: 4.4, studentEngagement: 4.2,
+    assessmentFairness: 4.3, overallSatisfaction: 4.4,
+  },
+  'February 2024': {
+    teachingEffectiveness: 4.6, subjectKnowledge: 4.8, communication: 4.4,
+    punctuality: 4.7, courseContent: 4.5, studentEngagement: 4.3,
+    assessmentFairness: 4.4, overallSatisfaction: 4.5,
+  },
+  'March 2024': {
+    teachingEffectiveness: 4.5, subjectKnowledge: 4.9, communication: 4.3,
+    punctuality: 4.6, courseContent: 4.5, studentEngagement: 4.2,
+    assessmentFairness: 4.4, overallSatisfaction: 4.5,
+  },
+  'April 2024': {
+    teachingEffectiveness: 4.4, subjectKnowledge: 4.7, communication: 4.3,
+    punctuality: 4.6, courseContent: 4.4, studentEngagement: 4.1,
+    assessmentFairness: 4.3, overallSatisfaction: 4.4,
+  },
+  'May 2024': {
+    teachingEffectiveness: 4.3, subjectKnowledge: 4.6, communication: 4.2,
+    punctuality: 4.5, courseContent: 4.3, studentEngagement: 4.0,
+    assessmentFairness: 4.2, overallSatisfaction: 4.3,
+  },
+  'June 2024': {
+    teachingEffectiveness: 4.2, subjectKnowledge: 4.5, communication: 4.1,
+    punctuality: 4.4, courseContent: 4.2, studentEngagement: 3.9,
+    assessmentFairness: 4.1, overallSatisfaction: 4.2,
+  },
+  'July 2024': {
+    teachingEffectiveness: 4.4, subjectKnowledge: 4.7, communication: 4.3,
+    punctuality: 4.6, courseContent: 4.4, studentEngagement: 4.1,
+    assessmentFairness: 4.3, overallSatisfaction: 4.4,
+  },
+  'August 2024': {
+    teachingEffectiveness: 4.6, subjectKnowledge: 4.8, communication: 4.5,
+    punctuality: 4.7, courseContent: 4.5, studentEngagement: 4.3,
+    assessmentFairness: 4.4, overallSatisfaction: 4.5,
+  },
+  'September 2024': {
+    teachingEffectiveness: 4.7, subjectKnowledge: 4.9, communication: 4.5,
+    punctuality: 4.8, courseContent: 4.6, studentEngagement: 4.4,
+    assessmentFairness: 4.5, overallSatisfaction: 4.6,
+  },
+  'October 2024': {
+    teachingEffectiveness: 4.6, subjectKnowledge: 4.8, communication: 4.4,
+    punctuality: 4.7, courseContent: 4.5, studentEngagement: 4.3,
+    assessmentFairness: 4.4, overallSatisfaction: 4.5,
+  },
+  'November 2024': {
+    teachingEffectiveness: 4.8, subjectKnowledge: 4.9, communication: 4.6,
+    punctuality: 4.8, courseContent: 4.7, studentEngagement: 4.5,
+    assessmentFairness: 4.5, overallSatisfaction: 4.7,
+  },
+  'December 2024': {
+    teachingEffectiveness: 4.7, subjectKnowledge: 4.9, communication: 4.5,
+    punctuality: 4.8, courseContent: 4.6, studentEngagement: 4.4,
+    assessmentFairness: 4.5, overallSatisfaction: 4.6,
+  },
+};
 
 export const getPerformanceColor = (score: number): string => {
   if (score >= 4.5) return 'text-success';
