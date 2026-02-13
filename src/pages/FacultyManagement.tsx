@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import FacultyTable from '@/components/dashboard/FacultyTable';
 import { mockFaculty, mockCourses } from '@/data/mockData';
 import { FacultyProfile } from '@/types';
-import { Search, Plus, Filter, Download } from 'lucide-react';
+import { Search, Plus, Filter, Download, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +34,21 @@ const FacultyManagement: React.FC = () => {
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Edit faculty form state
+  const [editFaculty, setEditFaculty] = useState({
+    id: '',
+    name: '',
+    email: '',
+    department: '',
+    designation: '',
+    qualification: '',
+    experience: '',
+    specialization: '',
+    coursesAssigned: '',
+    status: 'active' as 'active' | 'inactive' | 'on-leave',
+  });
 
   // Add faculty form state
   const [newFaculty, setNewFaculty] = useState({
@@ -64,8 +79,63 @@ const FacultyManagement: React.FC = () => {
   };
 
   const handleEdit = (f: FacultyProfile) => {
-    toast.info('Edit functionality', {
-      description: `Editing ${f.name}'s profile. Connect to Lovable Cloud for full CRUD operations.`,
+    setEditFaculty({
+      id: f.id,
+      name: f.name,
+      email: f.email,
+      department: f.department,
+      designation: f.designation,
+      qualification: f.qualification,
+      experience: String(f.experience),
+      specialization: f.specialization.join(', '),
+      coursesAssigned: f.coursesAssigned.join(', '),
+      status: f.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFaculty.name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    if (!editFaculty.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFaculty.email.trim())) {
+      toast.error('Valid email is required');
+      return;
+    }
+    if (!editFaculty.department.trim()) {
+      toast.error('Department is required');
+      return;
+    }
+    if (!editFaculty.designation.trim()) {
+      toast.error('Designation is required');
+      return;
+    }
+
+    setFaculty(prev => prev.map(f => {
+      if (f.id === editFaculty.id) {
+        return {
+          ...f,
+          name: editFaculty.name.trim(),
+          email: editFaculty.email.trim(),
+          department: editFaculty.department.trim(),
+          designation: editFaculty.designation.trim(),
+          qualification: editFaculty.qualification.trim() || 'Not specified',
+          experience: parseInt(editFaculty.experience) || 0,
+          specialization: editFaculty.specialization
+            ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean)
+            : [],
+          coursesAssigned: editFaculty.coursesAssigned
+            ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean)
+            : [],
+          status: editFaculty.status,
+        };
+      }
+      return f;
+    }));
+    setIsEditDialogOpen(false);
+    toast.success('Faculty updated successfully', {
+      description: `${editFaculty.name.trim()}'s profile has been updated.`,
     });
   };
 
@@ -411,6 +481,123 @@ const FacultyManagement: React.FC = () => {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Faculty Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-serif">Edit Faculty</DialogTitle>
+              <DialogDescription>
+                Update the faculty member's details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Full Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editFaculty.name}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email *</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editFaculty.email}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-department">Department *</Label>
+                  <Input
+                    id="edit-department"
+                    value={editFaculty.department}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, department: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-designation">Designation *</Label>
+                  <Select
+                    value={editFaculty.designation}
+                    onValueChange={(val) => setEditFaculty(prev => ({ ...prev, designation: val }))}
+                  >
+                    <SelectTrigger id="edit-designation">
+                      <SelectValue placeholder="Select designation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Assistant Professor">Assistant Professor</SelectItem>
+                      <SelectItem value="Associate Professor">Associate Professor</SelectItem>
+                      <SelectItem value="Professor">Professor</SelectItem>
+                      <SelectItem value="Lecturer">Lecturer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-qualification">Qualification</Label>
+                  <Input
+                    id="edit-qualification"
+                    value={editFaculty.qualification}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, qualification: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-experience">Experience (years)</Label>
+                  <Input
+                    id="edit-experience"
+                    type="number"
+                    min="0"
+                    value={editFaculty.experience}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, experience: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="edit-specialization">Specializations (comma separated)</Label>
+                  <Input
+                    id="edit-specialization"
+                    value={editFaculty.specialization}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, specialization: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-courses">Course IDs (comma separated)</Label>
+                  <Input
+                    id="edit-courses"
+                    value={editFaculty.coursesAssigned}
+                    onChange={(e) => setEditFaculty(prev => ({ ...prev, coursesAssigned: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={editFaculty.status}
+                    onValueChange={(val) => setEditFaculty(prev => ({ ...prev, status: val as 'active' | 'inactive' | 'on-leave' }))}
+                  >
+                    <SelectTrigger id="edit-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="on-leave">On Leave</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
