@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import RadarMetrics from '@/components/dashboard/RadarMetrics';
 import TrendChart from '@/components/dashboard/TrendChart';
@@ -16,10 +16,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
+
 const FacultyMetrics: React.FC = () => {
   const { user } = useAuth();
   const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
   const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty.id) || mockMetrics[0];
+  const [selectedSemester, setSelectedSemester] = useState('Semester 1');
 
   const radarData = [
     { subject: 'Teaching', score: currentMetrics.teachingQualityScore, fullMark: 100 },
@@ -31,47 +34,17 @@ const FacultyMetrics: React.FC = () => {
   ];
 
   const trendData = mockSemesterTrends.map(t => ({
-    name: t.semester.split(' ')[0] + "'" + t.semester.split(' ')[1].slice(2),
+    name: t.semester,
     value: t.qualityScore,
   }));
 
   const detailedMetrics = [
-    {
-      icon: BookOpen,
-      label: 'Teaching Quality',
-      value: currentMetrics.teachingQualityScore,
-      description: 'Based on student feedback and peer evaluations',
-    },
-    {
-      icon: Award,
-      label: 'Research Contribution',
-      value: currentMetrics.researchContribution,
-      description: 'Publications, grants, and academic contributions',
-    },
-    {
-      icon: Target,
-      label: 'Syllabus Completion',
-      value: currentMetrics.syllabusCompletion,
-      description: 'Percentage of planned curriculum covered',
-    },
-    {
-      icon: Clock,
-      label: 'Attendance Compliance',
-      value: currentMetrics.attendanceCompliance,
-      description: 'Regular presence and punctuality record',
-    },
-    {
-      icon: Users,
-      label: 'Student Pass Rate',
-      value: currentMetrics.studentPassRate,
-      description: 'Percentage of students passing the course',
-    },
-    {
-      icon: TrendingUp,
-      label: 'Innovative Teaching',
-      value: currentMetrics.innovativeTeaching,
-      description: 'Use of modern pedagogical methods',
-    },
+    { icon: BookOpen, label: 'Teaching Quality', value: currentMetrics.teachingQualityScore, description: 'Based on student feedback and peer evaluations' },
+    { icon: Award, label: 'Research Contribution', value: currentMetrics.researchContribution, description: 'Publications, grants, and academic contributions' },
+    { icon: Target, label: 'Syllabus Completion', value: currentMetrics.syllabusCompletion, description: 'Percentage of planned curriculum covered' },
+    { icon: Clock, label: 'Attendance Compliance', value: currentMetrics.attendanceCompliance, description: 'Regular presence and punctuality record' },
+    { icon: Users, label: 'Student Pass Rate', value: currentMetrics.studentPassRate, description: 'Percentage of students passing the course' },
+    { icon: TrendingUp, label: 'Innovative Teaching', value: currentMetrics.innovativeTeaching, description: 'Use of modern pedagogical methods' },
   ];
 
   const getScoreBadge = (score: number) => {
@@ -87,20 +60,17 @@ const FacultyMetrics: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">
-              Performance Metrics
-            </h1>
-            <p className="text-muted-foreground">
-              Your instructional quality evaluation scores
-            </p>
+            <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">Performance Metrics</h1>
+            <p className="text-muted-foreground">Your instructional quality evaluation scores</p>
           </div>
-          <Select defaultValue="Fall 2024">
+          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Fall 2024">Fall 2024</SelectItem>
-              <SelectItem value="Spring 2024">Spring 2024</SelectItem>
+              {SEMESTERS.map(sem => (
+                <SelectItem key={sem} value={sem}>{sem}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -110,7 +80,7 @@ const FacultyMetrics: React.FC = () => {
           <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
             <div>
               <h2 className="text-xl font-serif font-bold">Overall Quality Score</h2>
-              <p className="text-primary-foreground/80">Fall 2024 Evaluation</p>
+              <p className="text-primary-foreground/80">{selectedSemester} Evaluation</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
@@ -125,16 +95,8 @@ const FacultyMetrics: React.FC = () => {
 
         {/* Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <RadarMetrics
-            data={radarData}
-            title="Metric Breakdown"
-            subtitle="Performance across all evaluation categories"
-          />
-          <TrendChart
-            data={trendData}
-            title="Score History"
-            subtitle="Your quality score over past semesters"
-          />
+          <RadarMetrics data={radarData} title="Metric Breakdown" subtitle="Performance across all evaluation categories" />
+          <TrendChart data={trendData} title="Score History" subtitle="Your quality score over past semesters" />
         </div>
 
         {/* Detailed Metrics */}
