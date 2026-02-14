@@ -127,7 +127,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb1',
     facultyId: 'f1',
     courseId: 'CS101',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.8,
@@ -147,7 +147,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb2',
     facultyId: 'f2',
     courseId: 'CS201',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.9,
@@ -167,7 +167,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb3',
     facultyId: 'f3',
     courseId: 'EC101',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.2,
@@ -187,7 +187,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb4',
     facultyId: 'f1',
     courseId: 'CS301',
-    semester: 'Fall 2024',
+    semester: 'Semester 2',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.7,
@@ -207,7 +207,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb5',
     facultyId: 'f4',
     courseId: 'MA101',
-    semester: 'Spring 2024',
+    semester: 'Semester 2',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.4,
@@ -227,7 +227,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb6',
     facultyId: 'f5',
     courseId: 'PH101',
-    semester: 'Spring 2024',
+    semester: 'Semester 3',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 4.1,
@@ -247,7 +247,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb7',
     facultyId: 'f6',
     courseId: 'CS402',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     ratings: {
       teachingEffectiveness: 5.0,
@@ -268,7 +268,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb8',
     facultyId: 'f1',
     courseId: 'CS101',
-    semester: 'Fall 2023',
+    semester: 'Semester 1',
     academicYear: '2023-24',
     ratings: {
       teachingEffectiveness: 4.5,
@@ -288,7 +288,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb9',
     facultyId: 'f2',
     courseId: 'CS201',
-    semester: 'Spring 2023',
+    semester: 'Semester 2',
     academicYear: '2023-24',
     ratings: {
       teachingEffectiveness: 4.6,
@@ -308,7 +308,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb10',
     facultyId: 'f3',
     courseId: 'EC201',
-    semester: 'Fall 2023',
+    semester: 'Semester 1',
     academicYear: '2023-24',
     ratings: {
       teachingEffectiveness: 4.0,
@@ -329,7 +329,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb11',
     facultyId: 'f1',
     courseId: 'CS401',
-    semester: 'Fall 2022',
+    semester: 'Semester 1',
     academicYear: '2022-23',
     ratings: {
       teachingEffectiveness: 4.3,
@@ -349,7 +349,7 @@ export const mockFeedbacks: Feedback[] = [
     id: 'fb12',
     facultyId: 'f5',
     courseId: 'PH201',
-    semester: 'Spring 2023',
+    semester: 'Semester 2',
     academicYear: '2022-23',
     ratings: {
       teachingEffectiveness: 4.0,
@@ -371,7 +371,7 @@ export const mockMetrics: InstructionalMetric[] = [
   {
     id: 'm1',
     facultyId: 'f1',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     teachingQualityScore: 92,
     researchContribution: 85,
@@ -386,7 +386,7 @@ export const mockMetrics: InstructionalMetric[] = [
   {
     id: 'm2',
     facultyId: 'f2',
-    semester: 'Fall 2024',
+    semester: 'Semester 1',
     academicYear: '2024-25',
     teachingQualityScore: 95,
     researchContribution: 78,
@@ -401,7 +401,7 @@ export const mockMetrics: InstructionalMetric[] = [
   {
     id: 'm3',
     facultyId: 'f1',
-    semester: 'Fall 2023',
+    semester: 'Semester 1',
     academicYear: '2023-24',
     teachingQualityScore: 88,
     researchContribution: 82,
@@ -416,7 +416,7 @@ export const mockMetrics: InstructionalMetric[] = [
   {
     id: 'm4',
     facultyId: 'f2',
-    semester: 'Spring 2023',
+    semester: 'Semester 2',
     academicYear: '2023-24',
     teachingQualityScore: 90,
     researchContribution: 75,
@@ -457,16 +457,17 @@ export const mockDepartmentStats: DepartmentStats[] = mockDepartmentStatsByYear[
 // Academic year specific semester trends
 export const mockSemesterTrendsByYear: Record<string, SemesterTrend[]> = {
   '2024-25': [
-    { semester: 'Spring 2024', averageRating: 4.35, feedbackCount: 912, qualityScore: 87 },
-    { semester: 'Fall 2024', averageRating: 4.48, feedbackCount: 1047, qualityScore: 90 },
+    { semester: 'Semester 1', averageRating: 4.48, feedbackCount: 1047, qualityScore: 90 },
+    { semester: 'Semester 2', averageRating: 4.35, feedbackCount: 912, qualityScore: 87 },
+    { semester: 'Semester 3', averageRating: 4.20, feedbackCount: 780, qualityScore: 84 },
   ],
   '2023-24': [
-    { semester: 'Spring 2023', averageRating: 4.10, feedbackCount: 890, qualityScore: 82 },
-    { semester: 'Fall 2023', averageRating: 4.25, feedbackCount: 945, qualityScore: 85 },
+    { semester: 'Semester 1', averageRating: 4.25, feedbackCount: 945, qualityScore: 85 },
+    { semester: 'Semester 2', averageRating: 4.10, feedbackCount: 890, qualityScore: 82 },
   ],
   '2022-23': [
-    { semester: 'Spring 2022', averageRating: 3.90, feedbackCount: 780, qualityScore: 78 },
-    { semester: 'Fall 2022', averageRating: 4.05, feedbackCount: 850, qualityScore: 80 },
+    { semester: 'Semester 1', averageRating: 4.05, feedbackCount: 850, qualityScore: 80 },
+    { semester: 'Semester 2', averageRating: 3.90, feedbackCount: 780, qualityScore: 78 },
   ],
 };
 

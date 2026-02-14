@@ -171,7 +171,7 @@ const FacultyDashboard: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Course {courseCode}</p>
-                      <p className="text-xs text-muted-foreground">Fall 2024</p>
+                      <p className="text-xs text-muted-foreground">Semester 1</p>
                     </div>
                   </div>
                   <Badge variant="secondary">Active</Badge>

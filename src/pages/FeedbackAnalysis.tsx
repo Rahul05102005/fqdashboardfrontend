@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import StatCard from '@/components/dashboard/StatCard';
 
+const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
+
 const FeedbackAnalysis: React.FC = () => {
   const [semesterFilter, setSemesterFilter] = useState('all');
   const [facultyFilter, setFacultyFilter] = useState('all');
@@ -78,40 +80,15 @@ const FeedbackAnalysis: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard
-            title="Total Feedbacks"
-            value={totalFeedbacks}
-            subtitle="This semester"
-            icon={MessageSquare}
-          />
-          <StatCard
-            title="Average Rating"
-            value={avgRating}
-            subtitle="Across all categories"
-            icon={Star}
-            variant="success"
-          />
-          <StatCard
-            title="Response Rate"
-            value="78%"
-            subtitle="Student participation"
-            icon={TrendingUp}
-            trend={{ value: 5, isPositive: true }}
-          />
+          <StatCard title="Total Feedbacks" value={totalFeedbacks} subtitle="This semester" icon={MessageSquare} />
+          <StatCard title="Average Rating" value={avgRating} subtitle="Across all categories" icon={Star} variant="success" />
+          <StatCard title="Response Rate" value="78%" subtitle="Student participation" icon={TrendingUp} trend={{ value: 5, isPositive: true }} />
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <PerformanceChart
-            data={facultyRatings}
-            title="Faculty Ratings Comparison"
-            subtitle="Average rating per faculty member"
-          />
-          <TrendChart
-            data={categoryRatings}
-            title="Category-wise Ratings"
-            subtitle="Average scores by feedback category"
-          />
+          <PerformanceChart data={facultyRatings} title="Faculty Ratings Comparison" subtitle="Average rating per faculty member" />
+          <TrendChart data={categoryRatings} title="Category-wise Ratings" subtitle="Average scores by feedback category" />
         </div>
 
         {/* Filters */}
@@ -119,12 +96,7 @@ const FeedbackAnalysis: React.FC = () => {
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search feedbacks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Search feedbacks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
             <div className="flex flex-wrap gap-2">
               <Select value={semesterFilter} onValueChange={setSemesterFilter}>
@@ -134,8 +106,9 @@ const FeedbackAnalysis: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Semesters</SelectItem>
-                  <SelectItem value="Fall 2024">Fall 2024</SelectItem>
-                  <SelectItem value="Spring 2024">Spring 2024</SelectItem>
+                  {SEMESTERS.map(sem => (
+                    <SelectItem key={sem} value={sem}>{sem}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={facultyFilter} onValueChange={setFacultyFilter}>
@@ -161,16 +134,11 @@ const FeedbackAnalysis: React.FC = () => {
           </h2>
           <div className="grid gap-4">
             {filteredFeedbacks.map((feedback) => (
-              <div
-                key={feedback.id}
-                className="dashboard-card hover:shadow-card-hover transition-shadow"
-              >
+              <div key={feedback.id} className="dashboard-card hover:shadow-card-hover transition-shadow">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-foreground">
-                        {getFacultyName(feedback.facultyId)}
-                      </span>
+                      <span className="font-medium text-foreground">{getFacultyName(feedback.facultyId)}</span>
                       <Badge variant="outline">{feedback.courseId}</Badge>
                       <Badge variant="secondary">{feedback.semester}</Badge>
                     </div>
@@ -184,9 +152,7 @@ const FeedbackAnalysis: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5">
                     <Star className="h-4 w-4 fill-warning text-warning" />
-                    <span className="font-semibold text-foreground">
-                      {getAverageRating(feedback.ratings)}
-                    </span>
+                    <span className="font-semibold text-foreground">{getAverageRating(feedback.ratings)}</span>
                   </div>
                 </div>
 
@@ -194,9 +160,7 @@ const FeedbackAnalysis: React.FC = () => {
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {Object.entries(feedback.ratings).slice(0, 4).map(([key, value]) => (
                     <div key={key} className="text-center rounded-lg bg-muted/50 p-2">
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
                       <p className="font-semibold text-foreground">{value.toFixed(1)}</p>
                     </div>
                   ))}
