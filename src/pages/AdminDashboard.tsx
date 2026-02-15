@@ -7,7 +7,6 @@ import DepartmentPieChart from '@/components/dashboard/DepartmentPieChart';
 import FacultyTable from '@/components/dashboard/FacultyTable';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import {
-  mockFaculty as initialMockFaculty,
   mockFeedbacks,
   mockDepartmentStatsByYear,
   mockSemesterTrendsByYear,
@@ -32,41 +31,52 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { FacultyProfile } from '@/types';
 import { toast } from 'sonner';
+import { useFacultyStore } from '@/hooks/useFacultyStore';
 
 const AdminDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [academicYear, setAcademicYear] = useState('2024-25');
-  const [faculty, setFaculty] = useState<FacultyProfile[]>(initialMockFaculty);
+  const { faculty, updateFaculty, deleteFaculty } = useFacultyStore();
+
+  // View dialog
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null);
+
+  // Edit dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editFaculty, setEditFaculty] = useState({
-    id: '',
-    name: '',
-    email: '',
-    department: '',
-    designation: '',
-    qualification: '',
-    experience: '',
-    specialization: '',
-    coursesAssigned: '',
+    id: '', name: '', email: '', department: '', designation: '',
+    qualification: '', experience: '', specialization: '', coursesAssigned: '',
     status: 'active' as 'active' | 'inactive' | 'on-leave',
   });
 
-  // Filter feedbacks by academic year
-  const yearFeedbacks = useMemo(() => {
-    return mockFeedbacks.filter(f => f.academicYear === academicYear);
-  }, [academicYear]);
+  // Delete dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingFaculty, setDeletingFaculty] = useState<FacultyProfile | null>(null);
 
-  // Get year-specific department stats and trends
+  // Filter feedbacks by academic year
+  const yearFeedbacks = useMemo(() => mockFeedbacks.filter(f => f.academicYear === academicYear), [academicYear]);
+
   const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
   const semesterTrends = mockSemesterTrendsByYear[academicYear] || mockSemesterTrendsByYear['2024-25'];
   const qualityScore = yearQualityScores[academicYear] || '89%';
   const qualityTrend = yearQualityTrends[academicYear] || { value: 5, isPositive: true };
 
-  // Calculate statistics based on year-filtered feedbacks
   const totalFaculty = faculty.length;
   const activeFaculty = faculty.filter(f => f.status === 'active').length;
   const totalFeedbacks = yearFeedbacks.length > 0
@@ -90,7 +100,6 @@ const AdminDashboard: React.FC = () => {
     return { value: -3, isPositive: false };
   }, [academicYear]);
 
-  // Filter faculty
   const filteredFaculty = useMemo(() => {
     return faculty.filter(f => {
       const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -100,7 +109,6 @@ const AdminDashboard: React.FC = () => {
     });
   }, [searchQuery, departmentFilter, faculty]);
 
-  // Prepare chart data from year-specific stats
   const departmentChartData = departmentStats.map(d => ({
     name: d.department.split(' ')[0],
     rating: d.averageRating,
@@ -114,18 +122,17 @@ const AdminDashboard: React.FC = () => {
 
   const departments = [...new Set(faculty.map(f => f.department))];
 
+  const handleView = (f: FacultyProfile) => {
+    setSelectedFaculty(f);
+    setIsViewDialogOpen(true);
+  };
+
   const handleEdit = (f: FacultyProfile) => {
     setEditFaculty({
-      id: f.id,
-      name: f.name,
-      email: f.email,
-      department: f.department,
-      designation: f.designation,
-      qualification: f.qualification,
-      experience: String(f.experience),
-      specialization: f.specialization.join(', '),
-      coursesAssigned: f.coursesAssigned.join(', '),
-      status: f.status,
+      id: f.id, name: f.name, email: f.email, department: f.department,
+      designation: f.designation, qualification: f.qualification,
+      experience: String(f.experience), specialization: f.specialization.join(', '),
+      coursesAssigned: f.coursesAssigned.join(', '), status: f.status,
     });
     setIsEditDialogOpen(true);
   };
@@ -136,27 +143,33 @@ const AdminDashboard: React.FC = () => {
     if (!editFaculty.department.trim()) { toast.error('Department is required'); return; }
     if (!editFaculty.designation.trim()) { toast.error('Designation is required'); return; }
 
-    setFaculty(prev => prev.map(f => {
-      if (f.id === editFaculty.id) {
-        return {
-          ...f,
-          name: editFaculty.name.trim(),
-          email: editFaculty.email.trim(),
-          department: editFaculty.department.trim(),
-          designation: editFaculty.designation.trim(),
-          qualification: editFaculty.qualification.trim() || 'Not specified',
-          experience: parseInt(editFaculty.experience) || 0,
-          specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
-          coursesAssigned: editFaculty.coursesAssigned ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean) : [],
-          status: editFaculty.status,
-        };
-      }
-      return f;
-    }));
-    setIsEditDialogOpen(false);
-    toast.success('Faculty updated successfully', {
-      description: `${editFaculty.name.trim()}'s profile has been updated.`,
+    updateFaculty(editFaculty.id, {
+      name: editFaculty.name.trim(),
+      email: editFaculty.email.trim(),
+      department: editFaculty.department.trim(),
+      designation: editFaculty.designation.trim(),
+      qualification: editFaculty.qualification.trim() || 'Not specified',
+      experience: parseInt(editFaculty.experience) || 0,
+      specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
+      coursesAssigned: editFaculty.coursesAssigned ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean) : [],
+      status: editFaculty.status,
     });
+    setIsEditDialogOpen(false);
+    toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
+  };
+
+  const handleDeleteClick = (f: FacultyProfile) => {
+    setDeletingFaculty(f);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingFaculty) {
+      deleteFaculty(deletingFaculty.id);
+      toast.success('Faculty deleted', { description: `${deletingFaculty.name} has been removed.` });
+    }
+    setIsDeleteDialogOpen(false);
+    setDeletingFaculty(null);
   };
 
   return (
@@ -165,19 +178,13 @@ const AdminDashboard: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              Overview of faculty instructional quality metrics
-            </p>
+            <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Overview of faculty instructional quality metrics</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Academic Year:</span>
             <Select value={academicYear} onValueChange={setAcademicYear}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="2024-25">2024-25</SelectItem>
                 <SelectItem value="2023-24">2023-24</SelectItem>
@@ -230,8 +237,50 @@ const AdminDashboard: React.FC = () => {
               </Select>
             </div>
           </div>
-          <FacultyTable faculty={filteredFaculty} onView={(f) => console.log('View:', f)} onEdit={handleEdit} />
+          <FacultyTable faculty={filteredFaculty} onView={handleView} onEdit={handleEdit} onDelete={handleDeleteClick} />
         </div>
+
+        {/* View Faculty Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-serif">Faculty Profile</DialogTitle>
+              <DialogDescription>Detailed information about the faculty member</DialogDescription>
+            </DialogHeader>
+            {selectedFaculty && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                    {selectedFaculty.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">{selectedFaculty.name}</h3>
+                    <p className="text-muted-foreground">{selectedFaculty.designation}</p>
+                    <Badge variant={selectedFaculty.status === 'active' ? 'default' : 'secondary'} className="mt-1">
+                      {selectedFaculty.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1"><Label className="text-muted-foreground">Email</Label><p className="font-medium">{selectedFaculty.email}</p></div>
+                  <div className="space-y-1"><Label className="text-muted-foreground">Department</Label><p className="font-medium">{selectedFaculty.department}</p></div>
+                  <div className="space-y-1"><Label className="text-muted-foreground">Qualification</Label><p className="font-medium">{selectedFaculty.qualification}</p></div>
+                  <div className="space-y-1"><Label className="text-muted-foreground">Experience</Label><p className="font-medium">{selectedFaculty.experience} years</p></div>
+                  <div className="space-y-1"><Label className="text-muted-foreground">Average Rating</Label><p className="font-medium">{selectedFaculty.averageRating.toFixed(2)} / 5.0</p></div>
+                  <div className="space-y-1"><Label className="text-muted-foreground">Total Feedbacks</Label><p className="font-medium">{selectedFaculty.totalFeedbacks}</p></div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Specializations</Label>
+                  <div className="flex flex-wrap gap-2">{selectedFaculty.specialization.map(spec => <Badge key={spec} variant="secondary">{spec}</Badge>)}</div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Assigned Courses</Label>
+                  <div className="flex flex-wrap gap-2">{selectedFaculty.coursesAssigned.map(c => <Badge key={c} variant="outline">{c}</Badge>)}</div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Faculty Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -242,18 +291,9 @@ const AdminDashboard: React.FC = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-name">Full Name *</Label>
-                  <Input id="dash-edit-name" value={editFaculty.name} onChange={(e) => setEditFaculty(prev => ({ ...prev, name: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-email">Email *</Label>
-                  <Input id="dash-edit-email" type="email" value={editFaculty.email} onChange={(e) => setEditFaculty(prev => ({ ...prev, email: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-department">Department *</Label>
-                  <Input id="dash-edit-department" value={editFaculty.department} onChange={(e) => setEditFaculty(prev => ({ ...prev, department: e.target.value }))} />
-                </div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-name">Full Name *</Label><Input id="dash-edit-name" value={editFaculty.name} onChange={(e) => setEditFaculty(prev => ({ ...prev, name: e.target.value }))} /></div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-email">Email *</Label><Input id="dash-edit-email" type="email" value={editFaculty.email} onChange={(e) => setEditFaculty(prev => ({ ...prev, email: e.target.value }))} /></div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-department">Department *</Label><Input id="dash-edit-department" value={editFaculty.department} onChange={(e) => setEditFaculty(prev => ({ ...prev, department: e.target.value }))} /></div>
                 <div className="space-y-2">
                   <Label htmlFor="dash-edit-designation">Designation *</Label>
                   <Select value={editFaculty.designation} onValueChange={(val) => setEditFaculty(prev => ({ ...prev, designation: val }))}>
@@ -266,22 +306,10 @@ const AdminDashboard: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-qualification">Qualification</Label>
-                  <Input id="dash-edit-qualification" value={editFaculty.qualification} onChange={(e) => setEditFaculty(prev => ({ ...prev, qualification: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-experience">Experience (years)</Label>
-                  <Input id="dash-edit-experience" type="number" min="0" value={editFaculty.experience} onChange={(e) => setEditFaculty(prev => ({ ...prev, experience: e.target.value }))} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="dash-edit-specialization">Specializations (comma separated)</Label>
-                  <Input id="dash-edit-specialization" value={editFaculty.specialization} onChange={(e) => setEditFaculty(prev => ({ ...prev, specialization: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dash-edit-courses">Course IDs (comma separated)</Label>
-                  <Input id="dash-edit-courses" value={editFaculty.coursesAssigned} onChange={(e) => setEditFaculty(prev => ({ ...prev, coursesAssigned: e.target.value }))} />
-                </div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-qualification">Qualification</Label><Input id="dash-edit-qualification" value={editFaculty.qualification} onChange={(e) => setEditFaculty(prev => ({ ...prev, qualification: e.target.value }))} /></div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-experience">Experience (years)</Label><Input id="dash-edit-experience" type="number" min="0" value={editFaculty.experience} onChange={(e) => setEditFaculty(prev => ({ ...prev, experience: e.target.value }))} /></div>
+                <div className="space-y-2 sm:col-span-2"><Label htmlFor="dash-edit-specialization">Specializations (comma separated)</Label><Input id="dash-edit-specialization" value={editFaculty.specialization} onChange={(e) => setEditFaculty(prev => ({ ...prev, specialization: e.target.value }))} /></div>
+                <div className="space-y-2"><Label htmlFor="dash-edit-courses">Course IDs (comma separated)</Label><Input id="dash-edit-courses" value={editFaculty.coursesAssigned} onChange={(e) => setEditFaculty(prev => ({ ...prev, coursesAssigned: e.target.value }))} /></div>
                 <div className="space-y-2">
                   <Label htmlFor="dash-edit-status">Status</Label>
                   <Select value={editFaculty.status} onValueChange={(val) => setEditFaculty(prev => ({ ...prev, status: val as 'active' | 'inactive' | 'on-leave' }))}>
@@ -301,6 +329,22 @@ const AdminDashboard: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Faculty</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>{deletingFaculty?.name}</strong>? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

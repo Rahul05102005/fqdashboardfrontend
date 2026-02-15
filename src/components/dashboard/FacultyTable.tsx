@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Eye, Edit, Star } from 'lucide-react';
+import { Eye, Edit, Star, Trash2 } from 'lucide-react';
 import { getPerformanceBadge } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ interface FacultyTableProps {
   faculty: FacultyProfile[];
   onView?: (faculty: FacultyProfile) => void;
   onEdit?: (faculty: FacultyProfile) => void;
+  onDelete?: (faculty: FacultyProfile) => void;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ const FacultyTable: React.FC<FacultyTableProps> = ({
   faculty,
   onView,
   onEdit,
+  onDelete,
   className,
 }) => {
   const getStatusBadgeVariant = (status: string) => {
@@ -114,6 +116,16 @@ const FacultyTable: React.FC<FacultyTableProps> = ({
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
+                      {onDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDelete(f)}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
