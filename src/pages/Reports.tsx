@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrendChart from '@/components/dashboard/TrendChart';
 import DepartmentPieChart from '@/components/dashboard/DepartmentPieChart';
-import { mockFaculty, mockFeedbacks, mockDepartmentStatsByYear, mockSemesterTrendsByYear } from '@/data/mockData';
+import { mockFeedbacks, mockDepartmentStatsByYear, mockSemesterTrendsByYear } from '@/data/mockData';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,9 +14,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useFacultyStore } from '@/hooks/useFacultyStore';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reports: React.FC = () => {
   const [academicYear, setAcademicYear] = useState('2024-25');
+  const { faculty } = useFacultyStore();
 
   const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
   const semesterTrends = mockSemesterTrendsByYear[academicYear] || mockSemesterTrendsByYear['2024-25'];
@@ -33,38 +37,31 @@ const Reports: React.FC = () => {
     value2: t.qualityScore / 20,
   }));
 
-  const generateCSV = (headers: string[], rows: string[][]): string => {
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
-    return csvContent;
-  };
-
-  const downloadFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  };
-
   const handleExport = (type: string) => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text(type, 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Academic Year: ${academicYear}`, 14, 30);
+
     if (type === 'Faculty Performance Report') {
-      const headers = ['Name', 'Department', 'Designation', 'Avg Rating', 'Total Feedbacks', 'Status'];
-      const rows = mockFaculty.map(f => [f.name, f.department, f.designation, f.averageRating.toFixed(2), String(f.totalFeedbacks), f.status]);
-      downloadFile(generateCSV(headers, rows), `Faculty_Performance_Report_${academicYear}.csv`);
-      toast.success('Faculty Performance Report downloaded');
+      const headers = [['Name', 'Department', 'Designation', 'Avg Rating', 'Feedbacks', 'Status']];
+      const rows = faculty.map(f => [f.name, f.department, f.designation, f.averageRating.toFixed(2), String(f.totalFeedbacks), f.status]);
+      autoTable(doc, { head: headers, body: rows, startY: 36 });
+      doc.save(`Faculty_Performance_Report_${academicYear}.pdf`);
+      toast.success('Faculty Performance Report downloaded as PDF');
     } else if (type === 'Semester Summary Report') {
-      const headers = ['Semester', 'Average Rating', 'Feedback Count', 'Quality Score'];
+      const headers = [['Semester', 'Average Rating', 'Feedback Count', 'Quality Score']];
       const rows = semesterTrends.map(t => [t.semester, t.averageRating.toFixed(2), String(t.feedbackCount), String(t.qualityScore)]);
-      downloadFile(generateCSV(headers, rows), `Semester_Summary_Report_${academicYear}.csv`);
-      toast.success('Semester Summary Report downloaded');
+      autoTable(doc, { head: headers, body: rows, startY: 36 });
+      doc.save(`Semester_Summary_Report_${academicYear}.pdf`);
+      toast.success('Semester Summary Report downloaded as PDF');
     } else if (type === 'Department Analysis') {
-      const headers = ['Department', 'Faculty Count', 'Average Rating', 'Feedback Count'];
+      const headers = [['Department', 'Faculty Count', 'Average Rating', 'Feedback Count']];
       const rows = departmentStats.map(d => [d.department, String(d.facultyCount), d.averageRating.toFixed(2), String(d.feedbackCount)]);
-      downloadFile(generateCSV(headers, rows), `Department_Analysis_${academicYear}.csv`);
-      toast.success('Department Analysis downloaded');
+      autoTable(doc, { head: headers, body: rows, startY: 36 });
+      doc.save(`Department_Analysis_${academicYear}.pdf`);
+      toast.success('Department Analysis downloaded as PDF');
     }
   };
 
@@ -85,9 +82,7 @@ const Reports: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <Select value={academicYear} onValueChange={setAcademicYear}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="2024-25">2024-25</SelectItem>
                 <SelectItem value="2023-24">2023-24</SelectItem>

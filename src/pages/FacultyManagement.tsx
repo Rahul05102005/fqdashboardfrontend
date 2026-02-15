@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import FacultyTable from '@/components/dashboard/FacultyTable';
-import { mockFaculty, mockCourses } from '@/data/mockData';
+import { mockCourses } from '@/data/mockData';
 import { FacultyProfile } from '@/types';
 import { Search, Plus, Filter, Download, Save } from 'lucide-react';
+import { useFacultyStore } from '@/hooks/useFacultyStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,13 +22,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
 const FacultyManagement: React.FC = () => {
-  const [faculty, setFaculty] = useState<FacultyProfile[]>(mockFaculty);
+  const { faculty, addFaculty: addFacultyToStore, updateFaculty, deleteFaculty: deleteFacultyFromStore } = useFacultyStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,6 +46,8 @@ const FacultyManagement: React.FC = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingFaculty, setDeletingFaculty] = useState<FacultyProfile | null>(null);
 
   // Edit faculty form state
   const [editFaculty, setEditFaculty] = useState({
@@ -95,54 +108,42 @@ const FacultyManagement: React.FC = () => {
   };
 
   const handleSaveEdit = () => {
-    if (!editFaculty.name.trim()) {
-      toast.error('Name is required');
-      return;
-    }
-    if (!editFaculty.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFaculty.email.trim())) {
-      toast.error('Valid email is required');
-      return;
-    }
-    if (!editFaculty.department.trim()) {
-      toast.error('Department is required');
-      return;
-    }
-    if (!editFaculty.designation.trim()) {
-      toast.error('Designation is required');
-      return;
-    }
+    if (!editFaculty.name.trim()) { toast.error('Name is required'); return; }
+    if (!editFaculty.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFaculty.email.trim())) { toast.error('Valid email is required'); return; }
+    if (!editFaculty.department.trim()) { toast.error('Department is required'); return; }
+    if (!editFaculty.designation.trim()) { toast.error('Designation is required'); return; }
 
-    setFaculty(prev => prev.map(f => {
-      if (f.id === editFaculty.id) {
-        return {
-          ...f,
-          name: editFaculty.name.trim(),
-          email: editFaculty.email.trim(),
-          department: editFaculty.department.trim(),
-          designation: editFaculty.designation.trim(),
-          qualification: editFaculty.qualification.trim() || 'Not specified',
-          experience: parseInt(editFaculty.experience) || 0,
-          specialization: editFaculty.specialization
-            ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean)
-            : [],
-          coursesAssigned: editFaculty.coursesAssigned
-            ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean)
-            : [],
-          status: editFaculty.status,
-        };
-      }
-      return f;
-    }));
-    setIsEditDialogOpen(false);
-    toast.success('Faculty updated successfully', {
-      description: `${editFaculty.name.trim()}'s profile has been updated.`,
+    updateFaculty(editFaculty.id, {
+      name: editFaculty.name.trim(),
+      email: editFaculty.email.trim(),
+      department: editFaculty.department.trim(),
+      designation: editFaculty.designation.trim(),
+      qualification: editFaculty.qualification.trim() || 'Not specified',
+      experience: parseInt(editFaculty.experience) || 0,
+      specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
+      coursesAssigned: editFaculty.coursesAssigned ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean) : [],
+      status: editFaculty.status,
     });
+    setIsEditDialogOpen(false);
+    toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
   };
 
   const handleExport = () => {
-    toast.success('Export initiated', {
-      description: 'Faculty data export has been started.',
-    });
+    toast.success('Export initiated', { description: 'Faculty data export has been started.' });
+  };
+
+  const handleDeleteClick = (f: FacultyProfile) => {
+    setDeletingFaculty(f);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingFaculty) {
+      deleteFacultyFromStore(deletingFaculty.id);
+      toast.success('Faculty deleted', { description: `${deletingFaculty.name} has been removed.` });
+    }
+    setIsDeleteDialogOpen(false);
+    setDeletingFaculty(null);
   };
 
   const resetAddForm = () => {
@@ -200,7 +201,7 @@ const FacultyManagement: React.FC = () => {
       totalFeedbacks: 0,
     };
 
-    setFaculty(prev => [newProfile, ...prev]);
+    addFacultyToStore(newProfile);
     setIsAddDialogOpen(false);
     resetAddForm();
     toast.success('Faculty added successfully', {
@@ -281,6 +282,7 @@ const FacultyManagement: React.FC = () => {
           faculty={filteredFaculty}
           onView={handleView}
           onEdit={handleEdit}
+          onDelete={handleDeleteClick}
         />
 
         {/* Add Faculty Dialog */}
@@ -600,6 +602,22 @@ const FacultyManagement: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Faculty</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>{deletingFaculty?.name}</strong>? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
