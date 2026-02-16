@@ -5,7 +5,8 @@ import TrendChart from '@/components/dashboard/TrendChart';
 import RadarMetrics from '@/components/dashboard/RadarMetrics';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import { useAuth } from '@/context/AuthContext';
-import { mockFaculty, mockFeedbacks, mockMetrics, mockSemesterTrends } from '@/data/mockData';
+import { mockFaculty, mockMetrics, mockSemesterTrends } from '@/data/mockData';
+import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { Star, MessageSquare, TrendingUp, Award, BookOpen, Target } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +15,12 @@ import { cn } from '@/lib/utils';
 
 const FacultyDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { feedbacks: allFeedbacks } = useFeedbackStore();
   
   // Get current faculty data (mock: using first faculty member)
   const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
   const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty.id) || mockMetrics[0];
-  const facultyFeedbacks = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+  const facultyFeedbacks = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
 
   const performance = getPerformanceBadge(currentFaculty.averageRating);
 
@@ -152,7 +154,7 @@ const FacultyDashboard: React.FC = () => {
         {/* Recent Feedback */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <RecentFeedback
-            feedbacks={facultyFeedbacks.length > 0 ? facultyFeedbacks : mockFeedbacks.slice(0, 3)}
+            feedbacks={facultyFeedbacks.length > 0 ? facultyFeedbacks : allFeedbacks.slice(0, 3)}
             faculty={mockFaculty}
           />
           

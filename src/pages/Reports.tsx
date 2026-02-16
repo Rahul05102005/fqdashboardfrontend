@@ -3,7 +3,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrendChart from '@/components/dashboard/TrendChart';
 import DepartmentPieChart from '@/components/dashboard/DepartmentPieChart';
-import { mockFeedbacks, mockDepartmentStatsByYear, mockSemesterTrendsByYear } from '@/data/mockData';
+import { mockDepartmentStatsByYear, mockSemesterTrendsByYear } from '@/data/mockData';
+import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,10 +22,11 @@ import autoTable from 'jspdf-autotable';
 const Reports: React.FC = () => {
   const [academicYear, setAcademicYear] = useState('2024-25');
   const { faculty } = useFacultyStore();
+  const { feedbacks: allFeedbacks } = useFeedbackStore();
 
   const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
   const semesterTrends = mockSemesterTrendsByYear[academicYear] || mockSemesterTrendsByYear['2024-25'];
-  const yearFeedbacks = useMemo(() => mockFeedbacks.filter(f => f.academicYear === academicYear), [academicYear]);
+  const yearFeedbacks = useMemo(() => allFeedbacks.filter(f => f.academicYear === academicYear), [academicYear, allFeedbacks]);
 
   const departmentChartData = departmentStats.map(d => ({
     name: d.department.split(' ')[0],

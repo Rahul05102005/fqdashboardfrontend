@@ -34,7 +34,7 @@ const Login: React.FC = () => {
       const storedUser = localStorage.getItem('dashboard_user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
-        navigate(user.role === 'admin' ? '/admin' : '/faculty');
+        navigate(user.role === 'admin' ? '/admin' : user.role === 'student' ? '/student' : '/faculty');
       }
     } else {
       setError('Invalid email or password');
@@ -173,6 +173,7 @@ const Login: React.FC = () => {
             <div className="space-y-1 text-sm text-muted-foreground">
               <p><span className="font-medium">Admin:</span> admin@university.edu / admin123</p>
               <p><span className="font-medium">Faculty:</span> faculty@university.edu / faculty123</p>
+              <p><span className="font-medium">Student:</span> student@university.edu / student123</p>
             </div>
           </div>
         </div>

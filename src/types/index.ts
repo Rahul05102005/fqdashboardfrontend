@@ -1,6 +1,6 @@
 // Core Types for Faculty Instructional Quality Dashboard
 
-export type UserRole = 'admin' | 'faculty';
+export type UserRole = 'admin' | 'faculty' | 'student';
 
 export interface User {
   id: string;

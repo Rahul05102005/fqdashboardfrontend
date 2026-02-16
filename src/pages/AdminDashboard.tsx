@@ -7,12 +7,12 @@ import DepartmentPieChart from '@/components/dashboard/DepartmentPieChart';
 import FacultyTable from '@/components/dashboard/FacultyTable';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import {
-  mockFeedbacks,
   mockDepartmentStatsByYear,
   mockSemesterTrendsByYear,
   yearQualityScores,
   yearQualityTrends,
 } from '@/data/mockData';
+import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { Users, MessageSquare, Star, TrendingUp, Search, Filter, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ const AdminDashboard: React.FC = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [academicYear, setAcademicYear] = useState('2024-25');
   const { faculty, updateFaculty, deleteFaculty } = useFacultyStore();
+  const { feedbacks: allFeedbacks } = useFeedbackStore();
 
   // View dialog
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -70,7 +71,7 @@ const AdminDashboard: React.FC = () => {
   const [deletingFaculty, setDeletingFaculty] = useState<FacultyProfile | null>(null);
 
   // Filter feedbacks by academic year
-  const yearFeedbacks = useMemo(() => mockFeedbacks.filter(f => f.academicYear === academicYear), [academicYear]);
+  const yearFeedbacks = useMemo(() => allFeedbacks.filter(f => f.academicYear === academicYear), [academicYear, allFeedbacks]);
 
   const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
   const semesterTrends = mockSemesterTrendsByYear[academicYear] || mockSemesterTrendsByYear['2024-25'];
@@ -211,7 +212,7 @@ const AdminDashboard: React.FC = () => {
         {/* Secondary Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <DepartmentPieChart data={departmentStats} title="Faculty Distribution" subtitle={`By department (${academicYear})`} />
-          <RecentFeedback feedbacks={yearFeedbacks.length > 0 ? yearFeedbacks : mockFeedbacks} faculty={faculty} className="lg:col-span-2" />
+          <RecentFeedback feedbacks={yearFeedbacks.length > 0 ? yearFeedbacks : allFeedbacks} faculty={faculty} className="lg:col-span-2" />
         </div>
 
         {/* Faculty Table */}

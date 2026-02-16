@@ -21,6 +21,15 @@ const MOCK_USERS: (User & { password: string })[] = [
     department: 'Computer Science',
     createdAt: new Date().toISOString(),
   },
+  {
+    id: '3',
+    email: 'student@university.edu',
+    password: 'student123',
+    name: 'John Smith',
+    role: 'student',
+    department: 'Computer Science',
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 interface AuthContextType extends AuthState {
