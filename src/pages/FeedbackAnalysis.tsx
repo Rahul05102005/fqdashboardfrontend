@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockFaculty, mockFeedbacks, mockCourses } from '@/data/mockData';
+import { mockFaculty, mockCourses } from '@/data/mockData';
+import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { Feedback } from '@/types';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrendChart from '@/components/dashboard/TrendChart';
@@ -23,13 +24,14 @@ const FeedbackAnalysis: React.FC = () => {
   const [semesterFilter, setSemesterFilter] = useState('all');
   const [facultyFilter, setFacultyFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const { feedbacks: allFeedbacks } = useFeedbackStore();
 
   // Calculate overall stats
-  const totalFeedbacks = mockFeedbacks.length;
-  const avgRating = (mockFeedbacks.reduce((acc, f) => {
+  const totalFeedbacks = allFeedbacks.length;
+  const avgRating = (allFeedbacks.reduce((acc, f) => {
     const ratings = Object.values(f.ratings);
     return acc + ratings.reduce((a, b) => a + b, 0) / ratings.length;
-  }, 0) / totalFeedbacks).toFixed(2);
+  }, 0) / (totalFeedbacks || 1)).toFixed(2);
 
   // Prepare chart data
   const facultyRatings = mockFaculty.map(f => ({
@@ -46,7 +48,7 @@ const FeedbackAnalysis: React.FC = () => {
     { name: 'Engagement', value: 4.3 },
   ];
 
-  const filteredFeedbacks = mockFeedbacks.filter(f => {
+  const filteredFeedbacks = allFeedbacks.filter(f => {
     const matchesSemester = semesterFilter === 'all' || f.semester === semesterFilter;
     const matchesFaculty = facultyFilter === 'all' || f.facultyId === facultyFilter;
     const faculty = mockFaculty.find(fac => fac.id === f.facultyId);

@@ -47,7 +47,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { path: '/faculty/metrics', icon: BarChart3, label: 'Performance Metrics' },
   ];
 
-  const navItems = hasRole('admin') ? adminNavItems : facultyNavItems;
+  const studentNavItems = [
+    { path: '/student', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/student/feedback', icon: MessageSquare, label: 'Give Feedback' },
+  ];
+
+  const navItems = hasRole('admin') ? adminNavItems : hasRole('student') ? studentNavItems : facultyNavItems;
 
   const handleLogout = () => {
     logout();

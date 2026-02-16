@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import { useAuth } from '@/context/AuthContext';
-import { mockFaculty, mockFeedbacks, monthlyCategoryAverages } from '@/data/mockData';
+import { mockFaculty, monthlyCategoryAverages } from '@/data/mockData';
+import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { MessageSquare, Star, Calendar, ThumbsUp, TrendingUp } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ const MONTHS_2024 = [
 
 const FacultyFeedback: React.FC = () => {
   const { user } = useAuth();
+  const { feedbacks: allFeedbacks } = useFeedbackStore();
   const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
   const [selectedMonth, setSelectedMonth] = useState('December 2024');
 
@@ -33,20 +35,20 @@ const FacultyFeedback: React.FC = () => {
     const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth();
     const yearNum = parseInt(year);
 
-    const facultyFeedbacks = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
-    const allFeedbacks = facultyFeedbacks.length > 0 ? facultyFeedbacks : mockFeedbacks;
+    const facultyFeedbacks = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+    const feedbacksToFilter = facultyFeedbacks.length > 0 ? facultyFeedbacks : allFeedbacks;
 
-    return allFeedbacks.filter(f => {
+    return feedbacksToFilter.filter(f => {
       const d = new Date(f.submittedAt);
       return d.getMonth() === monthIndex && d.getFullYear() === yearNum;
     });
-  }, [selectedMonth, currentFaculty.id]);
+  }, [selectedMonth, currentFaculty.id, allFeedbacks]);
 
   // Use all faculty feedbacks if filtered returns empty for stats display
   const allFacultyFeedbacks = useMemo(() => {
-    const fb = mockFeedbacks.filter(f => f.facultyId === currentFaculty.id);
-    return fb.length > 0 ? fb : mockFeedbacks;
-  }, [currentFaculty.id]);
+    const fb = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+    return fb.length > 0 ? fb : allFeedbacks;
+  }, [currentFaculty.id, allFeedbacks]);
 
   const displayFeedbacks = filteredFeedbacks.length > 0 ? filteredFeedbacks : allFacultyFeedbacks;
 

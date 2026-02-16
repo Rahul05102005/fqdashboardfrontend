@@ -16,6 +16,8 @@ import Reports from "./pages/Reports";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FacultyFeedback from "./pages/FacultyFeedback";
 import FacultyMetrics from "./pages/FacultyMetrics";
+import StudentDashboard from "./pages/StudentDashboard";
+import StudentFeedback from "./pages/StudentFeedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +94,24 @@ const App = () => (
               }
             />
             
+            {/* Student Routes */}
+            <Route
+              path="/student"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/feedback"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentFeedback />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
