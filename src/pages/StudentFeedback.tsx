@@ -51,9 +51,22 @@ const StudentFeedback: React.FC = () => {
 
   const activeFaculty = faculty.filter(f => f.status === 'active');
   const selectedFaculty = activeFaculty.find(f => f.id === selectedFacultyId);
-  const availableCourses = selectedFaculty
+  const matchedCourses = selectedFaculty
     ? mockCourses.filter(c => selectedFaculty.coursesAssigned.includes(c.id))
     : [];
+  // If faculty has assigned courses not in mockCourses, create entries for them
+  const extraCourses = selectedFaculty
+    ? selectedFaculty.coursesAssigned
+        .filter(cId => !mockCourses.find(c => c.id === cId))
+        .map(cId => ({ id: cId, code: cId, name: cId, semester: 1, credits: 3, department: selectedFaculty.department }))
+    : [];
+  const availableCourses = [...matchedCourses, ...extraCourses];
+  // If no courses assigned at all, show all courses from the same department
+  const displayCourses = availableCourses.length > 0
+    ? availableCourses
+    : selectedFaculty
+      ? mockCourses.filter(c => c.department === selectedFaculty.department)
+      : [];
 
   const handleRatingChange = (key: keyof FeedbackRatings, value: number[]) => {
     setRatings(prev => ({ ...prev, [key]: value[0] }));
@@ -135,7 +148,7 @@ const StudentFeedback: React.FC = () => {
                     <Select value={selectedCourseId} onValueChange={setSelectedCourseId} disabled={!selectedFacultyId}>
                       <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                       <SelectContent>
-                        {availableCourses.map(c => (
+                        {displayCourses.map(c => (
                           <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
                         ))}
                       </SelectContent>
