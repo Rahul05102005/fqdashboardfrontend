@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import RecentFeedback from '@/components/dashboard/RecentFeedback';
 import { useAuth } from '@/context/AuthContext';
-import { mockFaculty, monthlyCategoryAverages } from '@/data/mockData';
+import { monthlyCategoryAverages } from '@/data/mockData';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { MessageSquare, Star, Calendar, ThumbsUp, TrendingUp } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
@@ -26,7 +27,8 @@ const MONTHS_2024 = [
 const FacultyFeedback: React.FC = () => {
   const { user } = useAuth();
   const { feedbacks: allFeedbacks } = useFeedbackStore();
-  const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
+  const { faculty: allFaculty } = useFacultyWithFeedback();
+  const currentFaculty = allFaculty.find(f => f.userId === user?.id) || allFaculty[0];
   const [selectedMonth, setSelectedMonth] = useState('December 2024');
 
   // Parse selected month to filter feedbacks
@@ -164,7 +166,7 @@ const FacultyFeedback: React.FC = () => {
         {/* Recent Feedback */}
         <RecentFeedback
           feedbacks={displayFeedbacks}
-          faculty={mockFaculty}
+          faculty={allFaculty}
         />
       </div>
     </DashboardLayout>

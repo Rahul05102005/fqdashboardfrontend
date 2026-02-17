@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFacultyStore } from '@/hooks/useFacultyStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { useAuth } from '@/context/AuthContext';
 import { MessageSquare, Users, Star, BookOpen } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { faculty } = useFacultyStore();
+  const { faculty } = useFacultyWithFeedback();
   const { feedbacks } = useFeedbackStore();
 
   const myFeedbacks = feedbacks.filter(f => f.submittedAt && !f.isAnonymous) ;

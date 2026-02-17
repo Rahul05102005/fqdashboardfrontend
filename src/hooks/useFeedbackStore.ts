@@ -47,5 +47,9 @@ export function useFeedbackStore() {
     setFeedbacks(prev => [feedback, ...prev]);
   };
 
-  return { feedbacks, setFeedbacks, addFeedback };
+  const deleteFeedback = (id: string) => {
+    setFeedbacks(prev => prev.filter(f => f.id !== id));
+  };
+
+  return { feedbacks, setFeedbacks, addFeedback, deleteFeedback };
 }

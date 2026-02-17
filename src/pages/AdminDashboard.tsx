@@ -45,13 +45,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { FacultyProfile } from '@/types';
 import { toast } from 'sonner';
-import { useFacultyStore } from '@/hooks/useFacultyStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 
 const AdminDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [academicYear, setAcademicYear] = useState('2024-25');
-  const { faculty, updateFaculty, deleteFaculty } = useFacultyStore();
+  const { faculty, updateFaculty, deleteFaculty, addFaculty: restoreFaculty } = useFacultyWithFeedback();
   const { feedbacks: allFeedbacks } = useFeedbackStore();
 
   // View dialog
@@ -166,8 +166,19 @@ const AdminDashboard: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (deletingFaculty) {
-      deleteFaculty(deletingFaculty.id);
-      toast.success('Faculty deleted', { description: `${deletingFaculty.name} has been removed.` });
+      const deleted = deletingFaculty;
+      deleteFaculty(deleted.id);
+      toast('Faculty deleted', {
+        description: `${deleted.name} has been removed.`,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            restoreFaculty(deleted);
+            toast.success(`${deleted.name} restored`);
+          },
+        },
+        duration: 5000,
+      });
     }
     setIsDeleteDialogOpen(false);
     setDeletingFaculty(null);

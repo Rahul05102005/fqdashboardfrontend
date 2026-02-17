@@ -8,12 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { useFacultyStore } from '@/hooks/useFacultyStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { mockCourses } from '@/data/mockData';
 import { Feedback, FeedbackRatings } from '@/types';
 import { toast } from 'sonner';
-import { Send, Star, CheckCircle2 } from 'lucide-react';
+import { Send, Star, CheckCircle2, Trash2 } from 'lucide-react';
 
 const ratingCategories: { key: keyof FeedbackRatings; label: string }[] = [
   { key: 'teachingEffectiveness', label: 'Teaching Effectiveness' },
@@ -38,8 +38,8 @@ const defaultRatings: FeedbackRatings = {
 };
 
 const StudentFeedback: React.FC = () => {
-  const { faculty } = useFacultyStore();
-  const { feedbacks, addFeedback } = useFeedbackStore();
+  const { faculty } = useFacultyWithFeedback();
+  const { feedbacks, addFeedback, deleteFeedback } = useFeedbackStore();
   const [selectedFacultyId, setSelectedFacultyId] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
@@ -112,6 +112,21 @@ const StudentFeedback: React.FC = () => {
   const myRecentFeedbacks = feedbacks
     .filter(fb => fb.id.startsWith('student_'))
     .slice(0, 5);
+
+  const handleDeleteFeedback = (fb: Feedback) => {
+    deleteFeedback(fb.id);
+    toast('Feedback deleted', {
+      description: `Feedback for ${faculty.find(f => f.id === fb.facultyId)?.name || 'Unknown'} removed.`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          addFeedback(fb);
+          toast.success('Feedback restored');
+        },
+      },
+      duration: 5000,
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -268,11 +283,23 @@ const StudentFeedback: React.FC = () => {
                       const avg = Object.values(fb.ratings).reduce((a, b) => a + b, 0) / 8;
                       return (
                         <div key={fb.id} className="rounded-lg border border-border p-3">
-                          <p className="font-medium text-sm text-foreground">{fac?.name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{fb.courseId} · {fb.semester}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Star className="h-3 w-3 text-chart-5 fill-chart-5" />
-                            <span className="text-xs font-medium">{avg.toFixed(1)}</span>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm text-foreground">{fac?.name || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground">{fb.courseId} · {fb.semester}</p>
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="h-3 w-3 text-chart-5 fill-chart-5" />
+                                <span className="text-xs font-medium">{avg.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteFeedback(fb)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
                       );
