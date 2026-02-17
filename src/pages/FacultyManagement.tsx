@@ -4,7 +4,7 @@ import FacultyTable from '@/components/dashboard/FacultyTable';
 import { mockCourses } from '@/data/mockData';
 import { FacultyProfile } from '@/types';
 import { Search, Plus, Filter, Download, Save } from 'lucide-react';
-import { useFacultyStore } from '@/hooks/useFacultyStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
 const FacultyManagement: React.FC = () => {
-  const { faculty, addFaculty: addFacultyToStore, updateFaculty, deleteFaculty: deleteFacultyFromStore } = useFacultyStore();
+  const { faculty, addFaculty: addFacultyToStore, updateFaculty, deleteFaculty: deleteFacultyFromStore } = useFacultyWithFeedback();
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -139,8 +139,19 @@ const FacultyManagement: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (deletingFaculty) {
-      deleteFacultyFromStore(deletingFaculty.id);
-      toast.success('Faculty deleted', { description: `${deletingFaculty.name} has been removed.` });
+      const deleted = deletingFaculty;
+      deleteFacultyFromStore(deleted.id);
+      toast('Faculty deleted', {
+        description: `${deleted.name} has been removed.`,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            addFacultyToStore(deleted);
+            toast.success(`${deleted.name} restored`);
+          },
+        },
+        duration: 5000,
+      });
     }
     setIsDeleteDialogOpen(false);
     setDeletingFaculty(null);
