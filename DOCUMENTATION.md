@@ -87,7 +87,7 @@ Backend Processing → Database Query → Response → UI Update
 | React Router | Navigation | 6.x |
 | React Query | Data Fetching | 5.x |
 
-### Backend (Lovable Cloud / Supabase)
+### Backend (faculty Cloud / Supabase)
 | Technology | Purpose |
 |------------|---------|
 | Supabase | Backend-as-a-Service |
@@ -286,15 +286,15 @@ Backend Processing → Database Query → Response → UI Update
 
 ## 🚀 Deployment Guide
 
-### Frontend Deployment (Lovable)
+### Frontend Deployment (faculty)
 
-1. Click "Publish" in Lovable interface
+1. Click "Publish" in faculty interface
 2. Configure custom domain (optional)
 3. Enable HTTPS (automatic)
 
-### Backend Setup (Lovable Cloud)
+### Backend Setup (faculty Cloud)
 
-1. Enable Lovable Cloud in project settings
+1. Enable faculty Cloud in project settings
 2. Create database tables via Cloud UI
 3. Configure Row Level Security policies
 4. Add environment secrets
@@ -302,7 +302,7 @@ Backend Processing → Database Query → Response → UI Update
 ### Environment Variables
 
 ```env
-# Database (Auto-configured by Lovable Cloud)
+# Database (Auto-configured by faculty Cloud)
 SUPABASE_URL=your_project_url
 SUPABASE_ANON_KEY=your_anon_key
 
