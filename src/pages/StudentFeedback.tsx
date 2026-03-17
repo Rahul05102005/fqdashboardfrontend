@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
-import { mockCourses } from '@/data/mockData';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Feedback, FeedbackRatings } from '@/types';
 import { toast } from 'sonner';
 import { Send, Star, CheckCircle2, Trash2 } from 'lucide-react';
@@ -37,9 +38,13 @@ const defaultRatings: FeedbackRatings = {
   overallSatisfaction: 3,
 };
 
+interface CourseRow { id: string; code: string; name: string; semester: number; credits: number; department: string; }
+
 const StudentFeedback: React.FC = () => {
+  const { user } = useAuth();
   const { faculty } = useFacultyWithFeedback();
   const { feedbacks, addFeedback, deleteFeedback } = useFeedbackStore();
+  const [courses, setCourses] = useState<CourseRow[]>([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
@@ -49,24 +54,18 @@ const StudentFeedback: React.FC = () => {
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    supabase.from('courses').select('*').then(({ data }) => {
+      if (data) setCourses(data as CourseRow[]);
+    });
+  }, []);
+
   const activeFaculty = faculty.filter(f => f.status === 'active');
   const selectedFaculty = activeFaculty.find(f => f.id === selectedFacultyId);
-  const matchedCourses = selectedFaculty
-    ? mockCourses.filter(c => selectedFaculty.coursesAssigned.includes(c.id))
+
+  const displayCourses = selectedFaculty
+    ? courses.filter(c => selectedFaculty.coursesAssigned.includes(c.code) || c.department === selectedFaculty.department)
     : [];
-  // If faculty has assigned courses not in mockCourses, create entries for them
-  const extraCourses = selectedFaculty
-    ? selectedFaculty.coursesAssigned
-        .filter(cId => !mockCourses.find(c => c.id === cId))
-        .map(cId => ({ id: cId, code: cId, name: cId, semester: 1, credits: 3, department: selectedFaculty.department }))
-    : [];
-  const availableCourses = [...matchedCourses, ...extraCourses];
-  // If no courses assigned at all, show all courses from the same department
-  const displayCourses = availableCourses.length > 0
-    ? availableCourses
-    : selectedFaculty
-      ? mockCourses.filter(c => c.department === selectedFaculty.department)
-      : [];
 
   const handleRatingChange = (key: keyof FeedbackRatings, value: number[]) => {
     setRatings(prev => ({ ...prev, [key]: value[0] }));
@@ -74,14 +73,14 @@ const StudentFeedback: React.FC = () => {
 
   const averageRating = Object.values(ratings).reduce((a, b) => a + b, 0) / Object.values(ratings).length;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedFacultyId || !selectedCourseId || !selectedSemester) {
       toast.error('Please fill all required fields');
       return;
     }
 
     const newFeedback: Feedback = {
-      id: `student_fb_${Date.now()}`,
+      id: crypto.randomUUID(),
       facultyId: selectedFacultyId,
       courseId: selectedCourseId,
       semester: selectedSemester,
@@ -92,13 +91,12 @@ const StudentFeedback: React.FC = () => {
       isAnonymous,
     };
 
-    addFeedback(newFeedback);
+    await addFeedback(newFeedback);
 
     toast.success('Feedback submitted successfully!', {
       description: `Your feedback for ${selectedFaculty?.name} has been recorded.`,
     });
 
-    // Reset form
     setSelectedFacultyId('');
     setSelectedCourseId('');
     setSelectedSemester('');
@@ -109,18 +107,17 @@ const StudentFeedback: React.FC = () => {
     setTimeout(() => setSubmitted(false), 3000);
   };
 
-  const myRecentFeedbacks = feedbacks
-    .filter(fb => fb.id.startsWith('student_'))
-    .slice(0, 5);
+  // Show feedbacks submitted by current user
+  const myRecentFeedbacks = feedbacks.slice(0, 5);
 
-  const handleDeleteFeedback = (fb: Feedback) => {
-    deleteFeedback(fb.id);
+  const handleDeleteFeedback = async (fb: Feedback) => {
+    await deleteFeedback(fb.id);
     toast('Feedback deleted', {
       description: `Feedback for ${faculty.find(f => f.id === fb.facultyId)?.name || 'Unknown'} removed.`,
       action: {
         label: 'Undo',
-        onClick: () => {
-          addFeedback(fb);
+        onClick: async () => {
+          await addFeedback(fb);
           toast.success('Feedback restored');
         },
       },
@@ -137,7 +134,6 @@ const StudentFeedback: React.FC = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Feedback Form */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -145,7 +141,6 @@ const StudentFeedback: React.FC = () => {
                 <CardDescription>Select a faculty member and course, then rate across different categories</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Faculty & Course Selection */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Faculty Member *</Label>
@@ -164,13 +159,12 @@ const StudentFeedback: React.FC = () => {
                       <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                       <SelectContent>
                         {displayCourses.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.code}>{c.code} — {c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Semester *</Label>
@@ -195,8 +189,6 @@ const StudentFeedback: React.FC = () => {
                     </Select>
                   </div>
                 </div>
-
-                {/* Rating Sliders */}
                 <div className="space-y-5">
                   <Label className="text-base font-semibold">Ratings</Label>
                   {ratingCategories.map(({ key, label }) => (
@@ -205,32 +197,15 @@ const StudentFeedback: React.FC = () => {
                         <span className="text-sm text-foreground">{label}</span>
                         <Badge variant="secondary">{ratings[key].toFixed(1)}</Badge>
                       </div>
-                      <Slider
-                        min={1}
-                        max={5}
-                        step={0.1}
-                        value={[ratings[key]]}
-                        onValueChange={(v) => handleRatingChange(key, v)}
-                        className="w-full"
-                      />
+                      <Slider min={1} max={5} step={0.1} value={[ratings[key]]} onValueChange={(v) => handleRatingChange(key, v)} className="w-full" />
                     </div>
                   ))}
                 </div>
-
-                {/* Comments */}
                 <div className="space-y-2">
                   <Label>Comments (Optional)</Label>
-                  <Textarea
-                    placeholder="Share your experience with this faculty member..."
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    rows={4}
-                    maxLength={500}
-                  />
+                  <Textarea placeholder="Share your experience..." value={comments} onChange={(e) => setComments(e.target.value)} rows={4} maxLength={500} />
                   <p className="text-xs text-muted-foreground">{comments.length}/500 characters</p>
                 </div>
-
-                {/* Anonymous toggle */}
                 <div className="flex items-center justify-between rounded-lg border border-border p-4">
                   <div>
                     <p className="font-medium text-foreground">Submit Anonymously</p>
@@ -238,7 +213,6 @@ const StudentFeedback: React.FC = () => {
                   </div>
                   <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                 </div>
-
                 <Button onClick={handleSubmit} className="w-full h-12 text-base" disabled={!selectedFacultyId || !selectedCourseId || !selectedSemester}>
                   {submitted ? (
                     <span className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> Submitted!</span>
@@ -250,13 +224,9 @@ const StudentFeedback: React.FC = () => {
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Average rating preview */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Rating Preview</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Rating Preview</CardTitle></CardHeader>
               <CardContent className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-2">
                   {[1,2,3,4,5].map(s => (
@@ -267,12 +237,8 @@ const StudentFeedback: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Average Rating</p>
               </CardContent>
             </Card>
-
-            {/* Recent feedbacks */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Your Recent Feedbacks</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Recent Feedbacks</CardTitle></CardHeader>
               <CardContent>
                 {myRecentFeedbacks.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No feedbacks submitted yet</p>
@@ -292,12 +258,7 @@ const StudentFeedback: React.FC = () => {
                                 <span className="text-xs font-medium">{avg.toFixed(1)}</span>
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteFeedback(fb)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteFeedback(fb)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>

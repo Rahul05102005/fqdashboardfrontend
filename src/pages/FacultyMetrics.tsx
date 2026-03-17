@@ -3,7 +3,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import RadarMetrics from '@/components/dashboard/RadarMetrics';
 import TrendChart from '@/components/dashboard/TrendChart';
 import { useAuth } from '@/context/AuthContext';
-import { mockFaculty, mockMetrics, mockSemesterTrends } from '@/data/mockData';
+import { mockMetrics, mockSemesterTrends } from '@/data/mockData';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { Award, Target, TrendingUp, BookOpen, Users, Clock } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { Progress } from '@/components/ui/progress';
@@ -20,8 +21,9 @@ const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Seme
 
 const FacultyMetrics: React.FC = () => {
   const { user } = useAuth();
-  const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
-  const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty.id) || mockMetrics[0];
+  const { faculty } = useFacultyWithFeedback();
+  const currentFaculty = faculty.find(f => f.userId === user?.id) || faculty[0];
+  const currentMetrics = mockMetrics[0]; // metrics still from mock for now
   const [selectedSemester, setSelectedSemester] = useState('Semester 1');
 
   const radarData = [
