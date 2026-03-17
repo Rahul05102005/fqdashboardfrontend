@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, signup, isLoading } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<UserRole>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,23 +29,45 @@ const Login: React.FC = () => {
       return;
     }
 
-    const success = await login({ email, password });
-    
-    if (success) {
-      toast.success('Welcome back!', {
-        description: 'You have successfully logged in.',
-      });
-      // Redirect based on role (handled by ProtectedRoute)
-      const storedUser = localStorage.getItem('dashboard_user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        navigate(user.role === 'admin' ? '/admin' : user.role === 'student' ? '/student' : '/faculty');
+    if (isSignUp) {
+      if (!name.trim()) {
+        setError('Please enter your name');
+        return;
+      }
+      const success = await signup({ email, password, name, role });
+      if (success) {
+        toast.success('Account created!', { description: 'You are now logged in.' });
+        const redirectPath = role === 'admin' ? '/admin' : role === 'student' ? '/student' : '/faculty';
+        navigate(redirectPath);
+      } else {
+        setError('Signup failed. Email may already be in use.');
+        toast.error('Signup failed');
       }
     } else {
-      setError('Invalid email or password');
-      toast.error('Login failed', {
-        description: 'Please check your credentials and try again.',
-      });
+      const success = await login({ email, password });
+      if (success) {
+        toast.success('Welcome back!', { description: 'You have successfully logged in.' });
+        // Wait briefly for auth state to resolve, then redirect
+        setTimeout(async () => {
+          const { useAuth: _ } = await import('@/context/AuthContext');
+          // Simple redirect based on stored profile
+          const storedSession = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+          if (storedSession.data.user) {
+            const { data: profile } = await (await import('@/integrations/supabase/client')).supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', storedSession.data.user.id)
+              .single();
+            if (profile) {
+              const r = profile.role as UserRole;
+              navigate(r === 'admin' ? '/admin' : r === 'student' ? '/student' : '/faculty');
+            }
+          }
+        }, 500);
+      } else {
+        setError('Invalid email or password');
+        toast.error('Login failed', { description: 'Please check your credentials and try again.' });
+      }
     }
   };
 
@@ -59,16 +86,14 @@ const Login: React.FC = () => {
               <p className="text-white/70">Instructional Quality Dashboard</p>
             </div>
           </div>
-          
           <div className="space-y-6 max-w-md">
             <h2 className="text-4xl xl:text-5xl font-serif font-bold text-white leading-tight">
               Elevate Teaching Excellence
             </h2>
             <p className="text-lg text-white/80 leading-relaxed">
-              Comprehensive analytics platform for evaluating, analyzing, and visualizing 
+              Comprehensive analytics platform for evaluating, analyzing, and visualizing
               faculty teaching performance. Make data-driven decisions to enhance academic quality.
             </p>
-            
             <div className="grid grid-cols-2 gap-4 pt-6">
               <div className="rounded-xl bg-white/10 backdrop-blur-sm p-4">
                 <p className="text-3xl font-bold text-white">50+</p>
@@ -83,7 +108,7 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
+      {/* Right Panel - Login/Signup Form */}
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
@@ -98,17 +123,32 @@ const Login: React.FC = () => {
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-serif font-bold text-foreground">Welcome back</h2>
+            <h2 className="text-2xl font-serif font-bold text-foreground">
+              {isSignUp ? 'Create an account' : 'Welcome back'}
+            </h2>
             <p className="mt-2 text-muted-foreground">
-              Enter your credentials to access your dashboard
+              {isSignUp ? 'Sign up to access your dashboard' : 'Enter your credentials to access your dashboard'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 {error}
+              </div>
+            )}
+
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-foreground">Full Name</Label>
+                <Input
+                  id="name"
+                  placeholder="Dr. Jane Smith"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-12"
+                />
               </div>
             )}
 
@@ -139,7 +179,7 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10 h-12"
-                  autoComplete="current-password"
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 />
                 <button
                   type="button"
@@ -151,30 +191,44 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold"
-              disabled={isLoading}
-            >
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-foreground">Role</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="faculty">Faculty</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  Signing in...
+                  {isSignUp ? 'Creating account...' : 'Signing in...'}
                 </div>
+              ) : isSignUp ? (
+                <span className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> Sign up</span>
               ) : (
                 'Sign in'
               )}
             </Button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="rounded-lg border border-border bg-muted/50 p-4">
-            <p className="text-sm font-medium text-foreground mb-2">Demo Credentials:</p>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p><span className="font-medium">Admin:</span> admin@university.edu / admin123</p>
-              <p><span className="font-medium">Faculty:</span> faculty@university.edu / faculty123</p>
-              <p><span className="font-medium">Student:</span> student@university.edu / student123</p>
-            </div>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+              className="text-sm text-primary hover:underline"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
           </div>
         </div>
       </div>

@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockFaculty, mockCourses } from '@/data/mockData';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { Feedback } from '@/types';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrendChart from '@/components/dashboard/TrendChart';
 import { MessageSquare, Star, TrendingUp, Filter, Calendar, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -25,16 +21,15 @@ const FeedbackAnalysis: React.FC = () => {
   const [facultyFilter, setFacultyFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { feedbacks: allFeedbacks } = useFeedbackStore();
+  const { faculty } = useFacultyWithFeedback();
 
-  // Calculate overall stats
   const totalFeedbacks = allFeedbacks.length;
   const avgRating = (allFeedbacks.reduce((acc, f) => {
     const ratings = Object.values(f.ratings);
     return acc + ratings.reduce((a, b) => a + b, 0) / ratings.length;
   }, 0) / (totalFeedbacks || 1)).toFixed(2);
 
-  // Prepare chart data
-  const facultyRatings = mockFaculty.map(f => ({
+  const facultyRatings = faculty.map(f => ({
     name: f.name.split(' ').slice(-1)[0],
     rating: f.averageRating,
   }));
@@ -51,16 +46,14 @@ const FeedbackAnalysis: React.FC = () => {
   const filteredFeedbacks = allFeedbacks.filter(f => {
     const matchesSemester = semesterFilter === 'all' || f.semester === semesterFilter;
     const matchesFaculty = facultyFilter === 'all' || f.facultyId === facultyFilter;
-    const faculty = mockFaculty.find(fac => fac.id === f.facultyId);
-    const matchesSearch = !searchQuery || 
-      faculty?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const fac = faculty.find(fc => fc.id === f.facultyId);
+    const matchesSearch = !searchQuery ||
+      fac?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.comments?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSemester && matchesFaculty && matchesSearch;
   });
 
-  const getFacultyName = (facultyId: string) => {
-    return mockFaculty.find(f => f.id === facultyId)?.name || 'Unknown';
-  };
+  const getFacultyName = (facultyId: string) => faculty.find(f => f.id === facultyId)?.name || 'Unknown';
 
   const getAverageRating = (ratings: Feedback['ratings']) => {
     const values = Object.values(ratings);
@@ -70,30 +63,19 @@ const FeedbackAnalysis: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
         <div>
-          <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">
-            Feedback Analysis
-          </h1>
-          <p className="text-muted-foreground">
-            Analyze student feedback and identify trends
-          </p>
+          <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">Feedback Analysis</h1>
+          <p className="text-muted-foreground">Analyze student feedback and identify trends</p>
         </div>
-
-        {/* Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard title="Total Feedbacks" value={totalFeedbacks} subtitle="This semester" icon={MessageSquare} />
           <StatCard title="Average Rating" value={avgRating} subtitle="Across all categories" icon={Star} variant="success" />
           <StatCard title="Response Rate" value="78%" subtitle="Student participation" icon={TrendingUp} trend={{ value: 5, isPositive: true }} />
         </div>
-
-        {/* Charts */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <PerformanceChart data={facultyRatings} title="Faculty Ratings Comparison" subtitle="Average rating per faculty member" />
           <TrendChart data={categoryRatings} title="Category-wise Ratings" subtitle="Average scores by feedback category" />
         </div>
-
-        {/* Filters */}
         <div className="dashboard-card">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
@@ -103,37 +85,27 @@ const FeedbackAnalysis: React.FC = () => {
             <div className="flex flex-wrap gap-2">
               <Select value={semesterFilter} onValueChange={setSemesterFilter}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Semester" />
+                  <Calendar className="mr-2 h-4 w-4" /><SelectValue placeholder="Semester" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Semesters</SelectItem>
-                  {SEMESTERS.map(sem => (
-                    <SelectItem key={sem} value={sem}>{sem}</SelectItem>
-                  ))}
+                  {SEMESTERS.map(sem => <SelectItem key={sem} value={sem}>{sem}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={facultyFilter} onValueChange={setFacultyFilter}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Faculty" />
+                  <Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Faculty" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Faculty</SelectItem>
-                  {mockFaculty.map(f => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
+                  {faculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
-
-        {/* Feedback List */}
         <div className="space-y-4">
-          <h2 className="text-xl font-serif font-semibold text-foreground">
-            Recent Feedbacks ({filteredFeedbacks.length})
-          </h2>
+          <h2 className="text-xl font-serif font-semibold text-foreground">Recent Feedbacks ({filteredFeedbacks.length})</h2>
           <div className="grid gap-4">
             {filteredFeedbacks.map((feedback) => (
               <div key={feedback.id} className="dashboard-card hover:shadow-card-hover transition-shadow">
@@ -144,9 +116,7 @@ const FeedbackAnalysis: React.FC = () => {
                       <Badge variant="outline">{feedback.courseId}</Badge>
                       <Badge variant="secondary">{feedback.semester}</Badge>
                     </div>
-                    {feedback.comments && (
-                      <p className="text-muted-foreground">"{feedback.comments}"</p>
-                    )}
+                    {feedback.comments && <p className="text-muted-foreground">"{feedback.comments}"</p>}
                     <p className="text-xs text-muted-foreground">
                       Submitted on {format(new Date(feedback.submittedAt), 'MMM dd, yyyy')}
                       {feedback.isAnonymous && ' • Anonymous'}
@@ -157,8 +127,6 @@ const FeedbackAnalysis: React.FC = () => {
                     <span className="font-semibold text-foreground">{getAverageRating(feedback.ratings)}</span>
                   </div>
                 </div>
-
-                {/* Rating Breakdown */}
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {Object.entries(feedback.ratings).slice(0, 4).map(([key, value]) => (
                     <div key={key} className="text-center rounded-lg bg-muted/50 p-2">
