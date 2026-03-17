@@ -21,8 +21,9 @@ const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Seme
 
 const FacultyMetrics: React.FC = () => {
   const { user } = useAuth();
-  const currentFaculty = mockFaculty.find(f => f.userId === user?.id) || mockFaculty[0];
-  const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty.id) || mockMetrics[0];
+  const { faculty } = useFacultyWithFeedback();
+  const currentFaculty = faculty.find(f => f.userId === user?.id) || faculty[0];
+  const currentMetrics = mockMetrics[0]; // metrics still from mock for now
   const [selectedSemester, setSelectedSemester] = useState('Semester 1');
 
   const radarData = [

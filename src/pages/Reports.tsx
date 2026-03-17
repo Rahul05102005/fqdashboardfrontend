@@ -21,7 +21,7 @@ import autoTable from 'jspdf-autotable';
 
 const Reports: React.FC = () => {
   const [academicYear, setAcademicYear] = useState('2024-25');
-  const { faculty } = useFacultyStore();
+  const { faculty } = useFacultyWithFeedback();
   const { feedbacks: allFeedbacks } = useFeedbackStore();
 
   const departmentStats = mockDepartmentStatsByYear[academicYear] || mockDepartmentStatsByYear['2024-25'];
