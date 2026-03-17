@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useFacultyStore } from '@/hooks/useFacultyStore';
+import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
