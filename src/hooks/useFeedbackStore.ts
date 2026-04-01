@@ -1,55 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Feedback } from '@/types';
-import { mockFeedbacks } from '@/data/mockData';
-
-const STORAGE_KEY = 'feedback_data';
-
-function loadFeedbacks(): Feedback[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch {
-    // ignore
-  }
-  return mockFeedbacks;
-}
-
-function saveFeedbacks(feedbacks: Feedback[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbacks));
-}
-
-const listeners = new Set<() => void>();
-function notify() {
-  listeners.forEach(fn => fn());
-}
+import api from '@/lib/api';
 
 export function useFeedbackStore() {
-  const [feedbacks, setFeedbacksState] = useState<Feedback[]>(loadFeedbacks);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const handler = () => setFeedbacksState(loadFeedbacks());
-    listeners.add(handler);
-    return () => { listeners.delete(handler); };
+  const fetchFeedbacks = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get('/feedback');
+      // Normalize _id to id for frontend compatibility
+      const data = response.data.map((f: any) => ({ ...f, id: f._id }));
+      setFeedbacks(data);
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const setFeedbacks = (updater: Feedback[] | ((prev: Feedback[]) => Feedback[])) => {
-    setFeedbacksState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveFeedbacks(next);
-      setTimeout(notify, 0);
-      return next;
-    });
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
+
+  const addFeedback = async (feedback: any) => {
+    try {
+      const response = await api.post('/feedback', feedback);
+      const newFeedback = { ...response.data, id: response.data._id };
+      setFeedbacks(prev => [newFeedback, ...prev]);
+      return newFeedback;
+    } catch (error) {
+      console.error('Error adding feedback:', error);
+      throw error;
+    }
   };
 
-  const addFeedback = (feedback: Feedback) => {
-    setFeedbacks(prev => [feedback, ...prev]);
+  const deleteFeedback = async (id: string) => {
+    try {
+      await api.delete(`/feedback/${id}`);
+      setFeedbacks(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      throw error;
+    }
   };
 
-  const deleteFeedback = (id: string) => {
-    setFeedbacks(prev => prev.filter(f => f.id !== id));
-  };
-
-  return { feedbacks, setFeedbacks, addFeedback, deleteFeedback };
+  return { feedbacks, isLoading, addFeedback, deleteFeedback, refresh: fetchFeedbacks };
 }

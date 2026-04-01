@@ -40,6 +40,8 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+import api from '@/lib/api';
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -70,15 +72,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const foundUser = MOCK_USERS.find(
-      u => u.email === credentials.email && u.password === credentials.password
-    );
-
-    if (foundUser) {
-      const { password, ...user } = foundUser;
+    try {
+      const response = await api.post('/auth/login', credentials);
+      const user = response.data;
+      
       localStorage.setItem('dashboard_user', JSON.stringify(user));
       setAuthState({
         user,
@@ -86,10 +83,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading: false,
       });
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return false;
     }
-
-    setAuthState(prev => ({ ...prev, isLoading: false }));
-    return false;
   }, []);
 
   const logout = useCallback(() => {

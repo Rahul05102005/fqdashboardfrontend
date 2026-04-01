@@ -107,25 +107,28 @@ const FacultyManagement: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editFaculty.name.trim()) { toast.error('Name is required'); return; }
     if (!editFaculty.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFaculty.email.trim())) { toast.error('Valid email is required'); return; }
     if (!editFaculty.department.trim()) { toast.error('Department is required'); return; }
     if (!editFaculty.designation.trim()) { toast.error('Designation is required'); return; }
 
-    updateFaculty(editFaculty.id, {
-      name: editFaculty.name.trim(),
-      email: editFaculty.email.trim(),
-      department: editFaculty.department.trim(),
-      designation: editFaculty.designation.trim(),
-      qualification: editFaculty.qualification.trim() || 'Not specified',
-      experience: parseInt(editFaculty.experience) || 0,
-      specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
-      coursesAssigned: editFaculty.coursesAssigned ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean) : [],
-      status: editFaculty.status,
-    });
-    setIsEditDialogOpen(false);
-    toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
+    try {
+      await updateFaculty(editFaculty.id, {
+        name: editFaculty.name.trim(),
+        email: editFaculty.email.trim(),
+        department: editFaculty.department.trim(),
+        designation: editFaculty.designation.trim(),
+        qualification: editFaculty.qualification.trim() || 'Not specified',
+        experience: parseInt(editFaculty.experience) || 0,
+        specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
+        status: editFaculty.status,
+      });
+      setIsEditDialogOpen(false);
+      toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
+    } catch (error) {
+      toast.error('Failed to update faculty');
+    }
   };
 
   const handleExport = () => {
@@ -137,21 +140,17 @@ const FacultyManagement: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingFaculty) {
       const deleted = deletingFaculty;
-      deleteFacultyFromStore(deleted.id);
-      toast('Faculty deleted', {
-        description: `${deleted.name} has been removed.`,
-        action: {
-          label: 'Undo',
-          onClick: () => {
-            addFacultyToStore(deleted);
-            toast.success(`${deleted.name} restored`);
-          },
-        },
-        duration: 5000,
-      });
+      try {
+        await deleteFacultyFromStore(deleted.id);
+        toast.success('Faculty deleted', {
+          description: `${deleted.name} has been removed.`,
+        });
+      } catch (error) {
+        toast.error('Failed to delete faculty');
+      }
     }
     setIsDeleteDialogOpen(false);
     setDeletingFaculty(null);
@@ -171,7 +170,7 @@ const FacultyManagement: React.FC = () => {
     });
   };
 
-  const handleAddFaculty = () => {
+  const handleAddFaculty = async () => {
     // Validation
     if (!newFaculty.name.trim()) {
       toast.error('Name is required');
@@ -190,34 +189,35 @@ const FacultyManagement: React.FC = () => {
       return;
     }
 
-    const newId = `f${Date.now()}`;
-    const newProfile: FacultyProfile = {
-      id: newId,
-      userId: `u${Date.now()}`,
-      name: newFaculty.name.trim(),
-      email: newFaculty.email.trim(),
-      department: newFaculty.department.trim(),
-      designation: newFaculty.designation.trim(),
-      qualification: newFaculty.qualification.trim() || 'Not specified',
-      experience: parseInt(newFaculty.experience) || 0,
-      specialization: newFaculty.specialization
-        ? newFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean)
-        : [],
-      joiningDate: new Date().toISOString().split('T')[0],
-      status: newFaculty.status,
-      coursesAssigned: newFaculty.coursesAssigned
-        ? newFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean)
-        : [],
-      averageRating: 0,
-      totalFeedbacks: 0,
-    };
+    try {
+      // Create user first if needed, but for now we assume API handles faculty creation
+      // which might involve user creation or linking.
+      // In our seed/models, faculty has a userId. 
+      // For simplicity in this demo, let's assume we pass a temporary userId or 
+      // backend handles it.
+      
+      const facultyData = {
+        name: newFaculty.name.trim(),
+        email: newFaculty.email.trim(),
+        department: newFaculty.department.trim(),
+        designation: newFaculty.designation.trim(),
+        qualification: newFaculty.qualification.trim() || 'Not specified',
+        experience: parseInt(newFaculty.experience) || 0,
+        specialization: newFaculty.specialization
+          ? newFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean)
+          : [],
+        joiningDate: new Date().toISOString(),
+        status: newFaculty.status,
+        userId: "660a1b2c3d4e5f67890abcde", // Placeholder User ID for demo
+      };
 
-    addFacultyToStore(newProfile);
-    setIsAddDialogOpen(false);
-    resetAddForm();
-    toast.success('Faculty added successfully', {
-      description: `${newProfile.name} has been added to the faculty list.`,
-    });
+      await addFacultyToStore(facultyData);
+      setIsAddDialogOpen(false);
+      resetAddForm();
+      toast.success('Faculty added successfully');
+    } catch (error) {
+      toast.error('Failed to add faculty');
+    }
   };
 
   return (

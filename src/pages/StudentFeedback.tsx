@@ -74,58 +74,54 @@ const StudentFeedback: React.FC = () => {
 
   const averageRating = Object.values(ratings).reduce((a, b) => a + b, 0) / Object.values(ratings).length;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedFacultyId || !selectedCourseId || !selectedSemester) {
       toast.error('Please fill all required fields');
       return;
     }
 
-    const newFeedback: Feedback = {
-      id: `student_fb_${Date.now()}`,
-      facultyId: selectedFacultyId,
-      courseId: selectedCourseId,
-      semester: selectedSemester,
-      academicYear: selectedYear,
-      ratings: { ...ratings },
-      comments: comments.trim() || undefined,
-      submittedAt: new Date().toISOString(),
-      isAnonymous,
-    };
+    try {
+      const newFeedback = {
+        facultyId: selectedFacultyId,
+        courseId: selectedCourseId,
+        semester: selectedSemester,
+        academicYear: selectedYear,
+        ratings: { ...ratings },
+        comments: comments.trim() || undefined,
+        isAnonymous,
+      };
 
-    addFeedback(newFeedback);
+      await addFeedback(newFeedback);
 
-    toast.success('Feedback submitted successfully!', {
-      description: `Your feedback for ${selectedFaculty?.name} has been recorded.`,
-    });
+      toast.success('Feedback submitted successfully!', {
+        description: `Your feedback for ${selectedFaculty?.name} has been recorded.`,
+      });
 
-    // Reset form
-    setSelectedFacultyId('');
-    setSelectedCourseId('');
-    setSelectedSemester('');
-    setRatings({ ...defaultRatings });
-    setComments('');
-    setIsAnonymous(true);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+      // Reset form
+      setSelectedFacultyId('');
+      setSelectedCourseId('');
+      setSelectedSemester('');
+      setRatings({ ...defaultRatings });
+      setComments('');
+      setIsAnonymous(true);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (error) {
+      toast.error('Failed to submit feedback');
+    }
   };
 
   const myRecentFeedbacks = feedbacks
     .filter(fb => fb.id.startsWith('student_'))
     .slice(0, 5);
 
-  const handleDeleteFeedback = (fb: Feedback) => {
-    deleteFeedback(fb.id);
-    toast('Feedback deleted', {
-      description: `Feedback for ${faculty.find(f => f.id === fb.facultyId)?.name || 'Unknown'} removed.`,
-      action: {
-        label: 'Undo',
-        onClick: () => {
-          addFeedback(fb);
-          toast.success('Feedback restored');
-        },
-      },
-      duration: 5000,
-    });
+  const handleDeleteFeedback = async (fb: Feedback) => {
+    try {
+      await deleteFeedback(fb.id);
+      toast.success('Feedback deleted');
+    } catch (error) {
+      toast.error('Failed to delete feedback');
+    }
   };
 
   return (

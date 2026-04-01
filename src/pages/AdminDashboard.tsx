@@ -138,25 +138,28 @@ const AdminDashboard: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editFaculty.name.trim()) { toast.error('Name is required'); return; }
     if (!editFaculty.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFaculty.email.trim())) { toast.error('Valid email is required'); return; }
     if (!editFaculty.department.trim()) { toast.error('Department is required'); return; }
     if (!editFaculty.designation.trim()) { toast.error('Designation is required'); return; }
 
-    updateFaculty(editFaculty.id, {
-      name: editFaculty.name.trim(),
-      email: editFaculty.email.trim(),
-      department: editFaculty.department.trim(),
-      designation: editFaculty.designation.trim(),
-      qualification: editFaculty.qualification.trim() || 'Not specified',
-      experience: parseInt(editFaculty.experience) || 0,
-      specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
-      coursesAssigned: editFaculty.coursesAssigned ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean) : [],
-      status: editFaculty.status,
-    });
-    setIsEditDialogOpen(false);
-    toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
+    try {
+      await updateFaculty(editFaculty.id, {
+        name: editFaculty.name.trim(),
+        email: editFaculty.email.trim(),
+        department: editFaculty.department.trim(),
+        designation: editFaculty.designation.trim(),
+        qualification: editFaculty.qualification.trim() || 'Not specified',
+        experience: parseInt(editFaculty.experience) || 0,
+        specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
+        status: editFaculty.status,
+      });
+      setIsEditDialogOpen(false);
+      toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
+    } catch (error) {
+      toast.error('Failed to update faculty');
+    }
   };
 
   const handleDeleteClick = (f: FacultyProfile) => {
@@ -164,21 +167,17 @@ const AdminDashboard: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingFaculty) {
       const deleted = deletingFaculty;
-      deleteFaculty(deleted.id);
-      toast('Faculty deleted', {
-        description: `${deleted.name} has been removed.`,
-        action: {
-          label: 'Undo',
-          onClick: () => {
-            restoreFaculty(deleted);
-            toast.success(`${deleted.name} restored`);
-          },
-        },
-        duration: 5000,
-      });
+      try {
+        await deleteFaculty(deleted.id);
+        toast.success('Faculty deleted', {
+          description: `${deleted.name} has been removed.`,
+        });
+      } catch (error) {
+        toast.error('Failed to delete faculty');
+      }
     }
     setIsDeleteDialogOpen(false);
     setDeletingFaculty(null);

@@ -20,21 +20,24 @@ import StatCard from '@/components/dashboard/StatCard';
 
 const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
 
+import { useFacultyStore } from '@/hooks/useFacultyStore';
+
 const FeedbackAnalysis: React.FC = () => {
   const [semesterFilter, setSemesterFilter] = useState('all');
   const [facultyFilter, setFacultyFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { feedbacks: allFeedbacks } = useFeedbackStore();
+  const { faculty: allFaculty } = useFacultyStore();
 
   // Calculate overall stats
   const totalFeedbacks = allFeedbacks.length;
   const avgRating = (allFeedbacks.reduce((acc, f) => {
     const ratings = Object.values(f.ratings);
-    return acc + ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    return acc + ratings.reduce((a, b) => a + b, 0) / (ratings.length || 1);
   }, 0) / (totalFeedbacks || 1)).toFixed(2);
 
   // Prepare chart data
-  const facultyRatings = mockFaculty.map(f => ({
+  const facultyRatings = allFaculty.map(f => ({
     name: f.name.split(' ').slice(-1)[0],
     rating: f.averageRating,
   }));
@@ -51,20 +54,20 @@ const FeedbackAnalysis: React.FC = () => {
   const filteredFeedbacks = allFeedbacks.filter(f => {
     const matchesSemester = semesterFilter === 'all' || f.semester === semesterFilter;
     const matchesFaculty = facultyFilter === 'all' || f.facultyId === facultyFilter;
-    const faculty = mockFaculty.find(fac => fac.id === f.facultyId);
+    const facultyMember = allFaculty.find(fac => fac.id === f.facultyId);
     const matchesSearch = !searchQuery || 
-      faculty?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      facultyMember?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.comments?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSemester && matchesFaculty && matchesSearch;
   });
 
   const getFacultyName = (facultyId: string) => {
-    return mockFaculty.find(f => f.id === facultyId)?.name || 'Unknown';
+    return allFaculty.find(f => f.id === facultyId)?.name || 'Unknown';
   };
 
   const getAverageRating = (ratings: Feedback['ratings']) => {
     const values = Object.values(ratings);
-    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+    return (values.reduce((a, b) => a + b, 0) / (values.length || 1)).toFixed(1);
   };
 
   return (

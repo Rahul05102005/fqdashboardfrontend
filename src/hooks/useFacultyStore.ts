@@ -1,60 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FacultyProfile } from '@/types';
-import { mockFaculty } from '@/data/mockData';
-
-const STORAGE_KEY = 'faculty_data';
-
-function loadFaculty(): FacultyProfile[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch {
-    // ignore
-  }
-  return mockFaculty;
-}
-
-function saveFaculty(faculty: FacultyProfile[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(faculty));
-}
-
-// Simple event-based sync across components
-const listeners = new Set<() => void>();
-function notify() {
-  listeners.forEach(fn => fn());
-}
+import api from '@/lib/api';
 
 export function useFacultyStore() {
-  const [faculty, setFacultyState] = useState<FacultyProfile[]>(loadFaculty);
+  const [faculty, setFaculty] = useState<FacultyProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const handler = () => setFacultyState(loadFaculty());
-    listeners.add(handler);
-    return () => { listeners.delete(handler); };
+  const fetchFaculty = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get('/faculty');
+      // Normalize _id to id for frontend compatibility
+      const data = response.data.map((f: any) => ({ ...f, id: f._id }));
+      setFaculty(data);
+    } catch (error) {
+      console.error('Error fetching faculty:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const setFaculty = (updater: FacultyProfile[] | ((prev: FacultyProfile[]) => FacultyProfile[])) => {
-    setFacultyState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveFaculty(next);
-      setTimeout(notify, 0);
-      return next;
-    });
+  useEffect(() => {
+    fetchFaculty();
+  }, [fetchFaculty]);
+
+  const addFaculty = async (profile: any) => {
+    try {
+      const response = await api.post('/faculty', profile);
+      const newFaculty = { ...response.data, id: response.data._id };
+      setFaculty(prev => [newFaculty, ...prev]);
+      return newFaculty;
+    } catch (error) {
+      console.error('Error adding faculty:', error);
+      throw error;
+    }
   };
 
-  const addFaculty = (profile: FacultyProfile) => {
-    setFaculty(prev => [profile, ...prev]);
+  const updateFaculty = async (id: string, updates: Partial<FacultyProfile>) => {
+    try {
+      const response = await api.put(`/faculty/${id}`, updates);
+      const updated = { ...response.data, id: response.data._id };
+      setFaculty(prev => prev.map(f => f.id === id ? updated : f));
+      return updated;
+    } catch (error) {
+      console.error('Error updating faculty:', error);
+      throw error;
+    }
   };
 
-  const updateFaculty = (id: string, updates: Partial<FacultyProfile>) => {
-    setFaculty(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+  const deleteFaculty = async (id: string) => {
+    try {
+      await api.delete(`/faculty/${id}`);
+      setFaculty(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
+      console.error('Error deleting faculty:', error);
+      throw error;
+    }
   };
 
-  const deleteFaculty = (id: string) => {
-    setFaculty(prev => prev.filter(f => f.id !== id));
-  };
-
-  return { faculty, setFaculty, addFaculty, updateFaculty, deleteFaculty };
+  return { faculty, isLoading, addFaculty, updateFaculty, deleteFaculty, refresh: fetchFaculty };
 }
