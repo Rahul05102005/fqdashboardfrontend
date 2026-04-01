@@ -5,11 +5,11 @@ import { FacultyProfile } from '@/types';
 
 /**
  * Returns faculty list with averageRating and totalFeedbacks
- * dynamically computed from the feedback store.
+ * dynamically computed from the feedback store (now from DB).
  */
 export function useFacultyWithFeedback() {
-  const { faculty, ...rest } = useFacultyStore();
-  const { feedbacks } = useFeedbackStore();
+  const { faculty, loading: facultyLoading, ...rest } = useFacultyStore();
+  const { feedbacks, loading: feedbackLoading } = useFeedbackStore();
 
   const enrichedFaculty: FacultyProfile[] = useMemo(() => {
     return faculty.map(f => {
@@ -27,5 +27,5 @@ export function useFacultyWithFeedback() {
     });
   }, [faculty, feedbacks]);
 
-  return { faculty: enrichedFaculty, ...rest };
+  return { faculty: enrichedFaculty, loading: facultyLoading || feedbackLoading, ...rest };
 }

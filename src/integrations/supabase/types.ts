@@ -14,16 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          code: string
+          credits: number
+          department: string
+          id: string
+          name: string
+          semester: number
+        }
+        Insert: {
+          code: string
+          credits?: number
+          department: string
+          id?: string
+          name: string
+          semester: number
+        }
+        Update: {
+          code?: string
+          credits?: number
+          department?: string
+          id?: string
+          name?: string
+          semester?: number
+        }
+        Relationships: []
+      }
+      faculty_profiles: {
+        Row: {
+          avatar: string | null
+          courses_assigned: string[]
+          created_at: string
+          department: string
+          designation: string
+          email: string
+          experience: number
+          id: string
+          joining_date: string
+          name: string
+          qualification: string
+          specialization: string[]
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          courses_assigned?: string[]
+          created_at?: string
+          department: string
+          designation?: string
+          email: string
+          experience?: number
+          id?: string
+          joining_date?: string
+          name: string
+          qualification?: string
+          specialization?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          courses_assigned?: string[]
+          created_at?: string
+          department?: string
+          designation?: string
+          email?: string
+          experience?: number
+          id?: string
+          joining_date?: string
+          name?: string
+          qualification?: string
+          specialization?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      feedbacks: {
+        Row: {
+          academic_year: string
+          assessment_fairness: number
+          comments: string | null
+          communication: number
+          course_content: number
+          course_id: string
+          faculty_id: string
+          id: string
+          is_anonymous: boolean
+          overall_satisfaction: number
+          punctuality: number
+          semester: string
+          student_engagement: number
+          subject_knowledge: number
+          submitted_at: string
+          submitted_by: string | null
+          teaching_effectiveness: number
+        }
+        Insert: {
+          academic_year: string
+          assessment_fairness?: number
+          comments?: string | null
+          communication?: number
+          course_content?: number
+          course_id: string
+          faculty_id: string
+          id?: string
+          is_anonymous?: boolean
+          overall_satisfaction?: number
+          punctuality?: number
+          semester: string
+          student_engagement?: number
+          subject_knowledge?: number
+          submitted_at?: string
+          submitted_by?: string | null
+          teaching_effectiveness?: number
+        }
+        Update: {
+          academic_year?: string
+          assessment_fairness?: number
+          comments?: string | null
+          communication?: number
+          course_content?: number
+          course_id?: string
+          faculty_id?: string
+          id?: string
+          is_anonymous?: boolean
+          overall_satisfaction?: number
+          punctuality?: number
+          semester?: string
+          student_engagement?: number
+          subject_knowledge?: number
+          submitted_at?: string
+          submitted_by?: string | null
+          teaching_effectiveness?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "faculty_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          department: string | null
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          department?: string | null
+          email: string
+          id: string
+          name: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "faculty" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +356,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "faculty", "student"],
+    },
   },
 } as const

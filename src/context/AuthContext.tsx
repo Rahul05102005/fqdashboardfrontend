@@ -1,39 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginCredentials, UserRole } from '@/types';
-
-// Mock users for demonstration (will be replaced with Supabase auth)
-const MOCK_USERS: (User & { password: string })[] = [
-  {
-    id: '1',
-    email: 'admin@university.edu',
-    password: 'admin123',
-    name: 'Dr. Sarah Johnson',
-    role: 'admin',
-    department: 'Administration',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    email: 'faculty@university.edu',
-    password: 'faculty123',
-    name: 'Prof. Michael Chen',
-    role: 'faculty',
-    department: 'Computer Science',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    email: 'student@university.edu',
-    password: 'student123',
-    name: 'John Smith',
-    role: 'student',
-    department: 'Computer Science',
-    createdAt: new Date().toISOString(),
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<boolean>;
+  signup: (credentials: LoginCredentials & { name: string; role?: UserRole }) => Promise<boolean>;
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
 }
@@ -49,24 +20,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isLoading: true,
   });
 
-  // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('dashboard_user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
         setAuthState({
-          user,
-          isAuthenticated: true,
+          user: profile,
+          isAuthenticated: !!profile,
           isLoading: false,
         });
-      } catch {
-        localStorage.removeItem('dashboard_user');
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+      } else {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
       }
-    } else {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-    }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setAuthState({
+          user: profile,
+          isAuthenticated: !!profile,
+          isLoading: false,
+        });
+      } else if (event === 'SIGNED_OUT') {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    });
+
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   const login = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
@@ -90,13 +73,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('dashboard_user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+  const signup = useCallback(async (credentials: LoginCredentials & { name: string; role?: UserRole }): Promise<boolean> => {
+    setAuthState(prev => ({ ...prev, isLoading: true }));
+    const { error } = await supabase.auth.signUp({
+      email: credentials.email,
+      password: credentials.password,
+      options: {
+        data: {
+          name: credentials.name,
+          role: credentials.role || 'student',
+        },
+      },
     });
+    if (error) {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return false;
+    }
+    return true;
+  }, []);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
   const hasRole = useCallback((role: UserRole): boolean => {
@@ -104,7 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [authState.user]);
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ ...authState, login, signup, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
