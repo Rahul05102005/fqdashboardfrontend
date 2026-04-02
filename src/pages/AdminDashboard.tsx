@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
@@ -13,6 +14,7 @@ import {
   yearQualityTrends,
 } from '@/data/mockData';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
+import { useAuth } from '@/context/AuthContext';
 import { Users, MessageSquare, Star, TrendingUp, Search, Filter, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -85,14 +87,16 @@ const AdminDashboard: React.FC = () => {
     : faculty.reduce((acc, f) => acc + f.totalFeedbacks, 0);
 
   const averageRating = useMemo(() => {
+    if (totalFaculty === 0) return '0.00';
     if (yearFeedbacks.length === 0) {
-      return (faculty.reduce((acc, f) => acc + f.averageRating, 0) / totalFaculty).toFixed(2);
+      return (faculty.reduce((acc, f) => acc + (f.averageRating || 0), 0) / totalFaculty).toFixed(2);
     }
     const avgPerFeedback = yearFeedbacks.map(f => {
-      const vals = Object.values(f.ratings);
+      const vals = Object.values(f.ratings || {});
+      if (vals.length === 0) return 0;
       return vals.reduce((a, b) => a + b, 0) / vals.length;
     });
-    return (avgPerFeedback.reduce((a, b) => a + b, 0) / avgPerFeedback.length).toFixed(2);
+    return (avgPerFeedback.reduce((a, b) => a + b, 0) / (avgPerFeedback.length || 1)).toFixed(2);
   }, [yearFeedbacks, totalFaculty, faculty]);
 
   const feedbackTrend = useMemo(() => {
@@ -183,14 +187,50 @@ const AdminDashboard: React.FC = () => {
     setDeletingFaculty(null);
   };
 
+  const { user } = useAuth();
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Admin Profile Showcase */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-1 bg-primary/5 border-primary/10">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-xl font-bold">
+                  {user?.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">{user?.name}</h2>
+                  <Badge variant="secondary" className="capitalize">{user?.role} Account</Badge>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="font-medium">{user?.email}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Department:</span>
+                  <span className="font-medium">University Admin</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="md:col-span-2 flex flex-col justify-center">
+            <h1 className="text-3xl font-serif font-bold text-foreground">Institutional Overview</h1>
+            <p className="text-muted-foreground max-w-xl">
+              Welcome to the Faculty Instructional Quality Dashboard. You have full access to performance metrics, 
+              faculty management, and institutional feedback analysis.
+            </p>
+          </div>
+        </div>
+
+        {/* Existing Header - simplified */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-border">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-foreground lg:text-3xl">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Overview of faculty instructional quality metrics</p>
+            <h2 className="text-xl font-bold text-foreground">Global Metrics</h2>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Academic Year:</span>
@@ -286,7 +326,13 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Assigned Courses</Label>
-                  <div className="flex flex-wrap gap-2">{selectedFaculty.coursesAssigned.map(c => <Badge key={c} variant="outline">{c}</Badge>)}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFaculty.coursesAssigned.map((c: any) => (
+                      <Badge key={typeof c === 'object' ? c._id : c} variant="outline">
+                        {typeof c === 'object' ? c.code : c}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

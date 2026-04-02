@@ -11,10 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Feedback, FeedbackRatings } from '@/types';
 import { toast } from 'sonner';
 import { Send, Star, CheckCircle2, Trash2 } from 'lucide-react';
+import api from '@/lib/api';
 
 const ratingCategories: { key: keyof FeedbackRatings; label: string }[] = [
   { key: 'teachingEffectiveness', label: 'Teaching Effectiveness' },
@@ -38,7 +38,15 @@ const defaultRatings: FeedbackRatings = {
   overallSatisfaction: 3,
 };
 
-interface CourseRow { id: string; code: string; name: string; semester: number; credits: number; department: string; }
+interface CourseRow { 
+  id: string; 
+  _id?: string;
+  code: string; 
+  name: string; 
+  semester: number; 
+  credits: number; 
+  department: string; 
+}
 
 const StudentFeedback: React.FC = () => {
   const { user } = useAuth();
@@ -53,19 +61,43 @@ const StudentFeedback: React.FC = () => {
   const [comments, setComments] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    supabase.from('courses').select('*').then(({ data }) => {
-      if (data) setCourses(data as CourseRow[]);
-    });
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('/courses');
+        const data = response.data.map((c: any) => ({ ...c, id: c._id }));
+        setCourses(data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+    fetchCourses();
   }, []);
 
   const activeFaculty = faculty.filter(f => f.status === 'active');
   const selectedFaculty = activeFaculty.find(f => f.id === selectedFacultyId);
 
   const displayCourses = selectedFaculty
-    ? courses.filter(c => selectedFaculty.coursesAssigned.includes(c.code) || c.department === selectedFaculty.department)
+    ? courses.filter(c => {
+        const assignedIds = (selectedFaculty.coursesAssigned || []).map((ca: any) => 
+          typeof ca === 'object' ? ca.id || ca._id : ca
+        );
+        const matchesAssigned = assignedIds.includes(c.id) || assignedIds.includes(c._id!);
+        
+        // Smarter department matching (handles "cse" vs "Computer Science")
+        const fDept = (selectedFaculty.department || '').toLowerCase();
+        const cDept = (c.department || '').toLowerCase();
+        const matchesDepartment = fDept === cDept || 
+                                 (fDept.length > 2 && cDept.includes(fDept)) || 
+                                 (cDept.length > 2 && fDept.includes(cDept)) ||
+                                 (fDept === 'cse' && cDept.includes('computer'));
+
+        return matchesAssigned || matchesDepartment;
+      })
     : [];
+
 
   const handleRatingChange = (key: keyof FeedbackRatings, value: number[]) => {
     setRatings(prev => ({ ...prev, [key]: value[0] }));
@@ -79,6 +111,7 @@ const StudentFeedback: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const newFeedback = {
         facultyId: selectedFacultyId,
@@ -107,6 +140,8 @@ const StudentFeedback: React.FC = () => {
       setTimeout(() => setSubmitted(false), 3000);
     } catch (error) {
       toast.error('Failed to submit feedback');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -156,7 +191,7 @@ const StudentFeedback: React.FC = () => {
                       <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                       <SelectContent>
                         {displayCourses.map(c => (
-                          <SelectItem key={c.id} value={c.code}>{c.code} — {c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -240,18 +275,26 @@ const StudentFeedback: React.FC = () => {
                 {myRecentFeedbacks.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No feedbacks submitted yet</p>
                 ) : (
-                  <div className="space-y-3">
+                    <div className="space-y-3">
                     {myRecentFeedbacks.map(fb => {
-                      const fac = faculty.find(f => f.id === fb.facultyId);
+                      // Safely get faculty name
+                      const fid = fb.facultyId ? (typeof fb.facultyId === 'object' ? (fb.facultyId as any)._id || (fb.facultyId as any).id : fb.facultyId) : null;
+                      const fac = faculty.find(f => f.id === fid || f._id === fid);
+                      
+                      // Safely get course code
+                      const courseDisplay = typeof fb.courseId === 'object' && fb.courseId !== null 
+                        ? (fb.courseId as any).code 
+                        : (courses.find(c => c.id === fb.courseId || c._id === fb.courseId)?.code || fb.courseId);
+
                       const avg = Object.values(fb.ratings).reduce((a, b) => a + b, 0) / 8;
                       return (
                         <div key={fb.id} className="rounded-lg border border-border p-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-sm text-foreground">{fac?.name || 'Unknown'}</p>
-                              <p className="text-xs text-muted-foreground">{fb.courseId} · {fb.semester}</p>
+                              <p className="font-medium text-sm text-foreground">{fac?.name || 'Unknown Faculty'}</p>
+                              <p className="text-xs text-muted-foreground">{courseDisplay} · {fb.semester}</p>
                               <div className="flex items-center gap-1 mt-1">
-                                <Star className="h-3 w-3 text-chart-5 fill-chart-5" />
+                                <Star className="h-3 w-3 text-warning fill-warning" />
                                 <span className="text-xs font-medium">{avg.toFixed(1)}</span>
                               </div>
                             </div>
@@ -263,6 +306,7 @@ const StudentFeedback: React.FC = () => {
                       );
                     })}
                   </div>
+
                 )}
               </CardContent>
             </Card>

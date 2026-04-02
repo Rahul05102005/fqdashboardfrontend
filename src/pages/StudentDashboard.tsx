@@ -18,10 +18,37 @@ const StudentDashboard: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-serif font-bold text-foreground">Welcome, {user?.name}</h1>
-          <p className="text-muted-foreground">Student Dashboard — Submit feedback to help improve teaching quality</p>
+      <div className="space-y-6 animate-fade-in">
+        {/* Student Profile Showcase */}
+        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-xl font-bold">
+                {user?.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <h1 className="text-2xl font-serif font-bold text-foreground">Welcome, {user?.name}</h1>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <Badge variant="secondary" className="capitalize">{user?.role}</Badge>
+                  <Badge variant="outline" className="bg-background">Computer Science Department</Badge>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 md:flex md:gap-8">
+              <div className="text-center md:text-left">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Academic Year</p>
+                <p className="text-sm font-semibold">2024-2025</p>
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Feedback Status</p>
+                <p className="text-sm font-semibold text-success flex items-center gap-1 justify-center md:justify-start">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success"></span>
+                  Active
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

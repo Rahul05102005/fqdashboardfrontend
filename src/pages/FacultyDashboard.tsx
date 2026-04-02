@@ -21,10 +21,13 @@ const FacultyDashboard: React.FC = () => {
   
   // Get current faculty data (mock: using first faculty member)
   const currentFaculty = allFaculty.find(f => f.userId === user?.id) || allFaculty[0];
-  const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty.id) || mockMetrics[0];
-  const facultyFeedbacks = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
+  const currentMetrics = mockMetrics.find(m => m.facultyId === currentFaculty?.id) || mockMetrics[0];
+  const facultyFeedbacks = allFeedbacks.filter(f => {
+    const fid = typeof f.facultyId === 'object' ? (f.facultyId as any)._id || (f.facultyId as any).id : f.facultyId;
+    return fid === currentFaculty?.id || fid === currentFaculty?._id;
+  });
 
-  const performance = getPerformanceBadge(currentFaculty.averageRating);
+  const performance = getPerformanceBadge(currentFaculty?.averageRating);
 
   // Prepare radar chart data
   const radarData = [
@@ -39,7 +42,7 @@ const FacultyDashboard: React.FC = () => {
   // Prepare trend data
   const trendData = mockSemesterTrends.map(t => ({
     name: t.semester.split(' ')[0] + "'" + t.semester.split(' ')[1].slice(2),
-    value: t.averageRating,
+    value: t?.averageRating,
   }));
 
   const metricsBreakdown = [
@@ -52,67 +55,89 @@ const FacultyDashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Welcome Header */}
-        <div className="dashboard-card gradient-primary text-primary-foreground">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-xl font-bold">
-                {currentFaculty.name.split(' ').map(n => n[0]).join('')}
+        {/* Faculty Profile Showcase */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <div className="md:col-span-1">
+            <div className="flex flex-col items-center p-6 bg-card rounded-2xl border border-border text-center h-full justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-2xl font-bold text-primary mb-4 border border-primary/20">
+                {currentFaculty?.name ? currentFaculty.name.split(' ').map(n => n[0]).join('') : user?.name.split(' ').map(n => n[0]).join('')}
               </div>
+              <h2 className="text-xl font-bold text-foreground">{currentFaculty?.name || user?.name}</h2>
+              <p className="text-sm text-primary font-medium">{currentFaculty?.designation || 'Faculty Member'}</p>
+              <Badge variant="outline" className="mt-2 bg-primary/5">{currentFaculty?.department || 'General'}</Badge>
+            </div>
+          </div>
+          
+          <div className="md:col-span-3 bg-card rounded-2xl border border-border p-6 flex flex-col justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-xl font-serif font-bold md:text-2xl">
-                  Welcome, {currentFaculty.name.split(' ')[0]}!
-                </h1>
-                <p className="text-primary-foreground/80">
-                  {currentFaculty.designation} • {currentFaculty.department}
-                </p>
+                <h1 className="text-2xl font-serif font-bold text-foreground">Welcome Back, Professor</h1>
+                <p className="text-muted-foreground">Keep track of your instructional quality and student feedback engagement.</p>
+              </div>
+              <div className="flex items-center gap-3 bg-muted/50 p-3 rounded-xl border border-border">
+                <div className="text-center px-4 border-r border-border">
+                  <p className="text-xl font-bold text-foreground">{currentFaculty?.averageRating.toFixed(1)}</p>
+                  <p className="text-[10px] uppercase text-muted-foreground font-semibold">Avg Rating</p>
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-xl font-bold text-foreground">{performance?.label}</p>
+                  <p className="text-[10px] uppercase text-muted-foreground font-semibold">Performance</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold">{currentFaculty.averageRating.toFixed(1)}</p>
-                <p className="text-sm text-primary-foreground/70">Overall Rating</p>
+            
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold">Qualification</p>
+                <p className="text-sm font-medium">{currentFaculty?.qualification || 'PhD Computer Science'}</p>
               </div>
-              <Badge
-                className={cn(
-                  'px-4 py-1.5 text-sm',
-                  performance.variant === 'success'
-                    ? 'bg-white/20 text-white border-white/30'
-                    : 'bg-warning/20 text-white border-warning/30'
-                )}
-              >
-                {performance.label}
-              </Badge>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold">Experience</p>
+                <p className="text-sm font-medium">{currentFaculty?.experience || '12'} Years</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold">Specialization</p>
+                <p className="text-sm font-medium truncate">{currentFaculty?.specialization[0] || 'AI / ML'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase text-muted-foreground font-bold">Status</p>
+                <div className="flex items-center gap-1.5 capitalize text-sm font-medium">
+                  <span className="h-2 w-2 rounded-full bg-success"></span>
+                  {currentFaculty?.status}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
+
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Average Rating"
-            value={currentFaculty.averageRating.toFixed(1)}
+            value={currentFaculty?.averageRating.toFixed(1)}
             subtitle="Out of 5.0"
             icon={Star}
             variant="success"
           />
           <StatCard
             title="Total Feedbacks"
-            value={currentFaculty.totalFeedbacks}
+            value={currentFaculty?.totalFeedbacks}
             subtitle="This academic year"
             icon={MessageSquare}
             trend={{ value: 8, isPositive: true }}
           />
           <StatCard
             title="Quality Score"
-            value={`${currentMetrics.overallScore}%`}
+            value={`${currentMetrics?.overallScore}%`}
             subtitle="Institutional metric"
             icon={TrendingUp}
             trend={{ value: 3, isPositive: true }}
           />
           <StatCard
             title="Courses"
-            value={currentFaculty.coursesAssigned.length}
+            value={currentFaculty?.coursesAssigned?.length}
             subtitle="Currently assigned"
             icon={BookOpen}
           />
@@ -164,24 +189,38 @@ const FacultyDashboard: React.FC = () => {
           <div className="dashboard-card">
             <h3 className="text-lg font-semibold text-foreground mb-4">Assigned Courses</h3>
             <div className="space-y-3">
-              {currentFaculty.coursesAssigned.map((courseCode) => (
-                <div
-                  key={courseCode}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-                      {courseCode}
+              {currentFaculty?.coursesAssigned?.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No courses assigned yet</p>
+              ) : (
+                currentFaculty?.coursesAssigned?.map((course: any, ind) => {
+                  const isPopulated = typeof course === 'object' && course !== null;
+                  const code = isPopulated ? course.code : (typeof course === 'string' ? '...' : 'Unknown');
+                  const name = isPopulated ? course.name : (typeof course === 'string' ? `Course ${ind + 1}` : 'Unknown');
+                  const semester = isPopulated ? `Semester ${course.semester || 1}` : 'Semester 1';
+
+                  return (
+                    <div
+                      key={isPopulated ? (course._id || course.id) : (course + ind)}
+                      className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:bg-muted/40 hover:shadow-sm"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col min-w-0">
+                          <p className="font-semibold text-foreground truncate">{name}</p>
+                          <p className="text-xs text-muted-foreground font-semibold flex items-center gap-2">
+                            <span className="text-primary">{code}</span>
+                            <span className="opacity-50">|</span>
+                            <span>{semester}</span>
+                          </p>
+                        </div>
+
+                      </div>
+                      <Badge variant="secondary" className="bg-success/10 text-success border-success/20 hover:bg-success/20">Active</Badge>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">Course {courseCode}</p>
-                      <p className="text-xs text-muted-foreground">Semester 1</p>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">Active</Badge>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </div>
+
           </div>
         </div>
       </div>

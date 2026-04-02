@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useFeedbackStore } from '@/hooks/useFeedbackStore';
 import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
-import { Feedback } from '@/types';
+import { Feedback, FacultyProfile } from '@/types';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import TrendChart from '@/components/dashboard/TrendChart';
 import { MessageSquare, Star, TrendingUp, Filter, Calendar, Search } from 'lucide-react';
@@ -37,19 +37,30 @@ const FeedbackAnalysis: React.FC = () => {
     rating: f.averageRating,
   }));
 
+  // Calculate category averages from real feedback
   const categoryRatings = [
-    { name: 'Teaching', value: 4.6 },
-    { name: 'Knowledge', value: 4.8 },
-    { name: 'Communication', value: 4.5 },
-    { name: 'Punctuality', value: 4.7 },
-    { name: 'Content', value: 4.4 },
-    { name: 'Engagement', value: 4.3 },
-  ];
+    { name: 'Teaching', key: 'teachingEffectiveness' },
+    { name: 'Knowledge', subject: 'Subject Knowledge', key: 'subjectKnowledge' },
+    { name: 'Communication', key: 'communication' },
+    { name: 'Punctuality', key: 'punctuality' },
+    { name: 'Content', key: 'courseContent' },
+    { name: 'Engagement', key: 'studentEngagement' },
+    { name: 'Fairness', key: 'assessmentFairness' },
+    { name: 'Overall', key: 'overallSatisfaction' },
+  ].map(cat => {
+    const values = allFeedbacks.map(f => (f.ratings as any)[cat.key] || 0).filter(v => v > 0);
+    const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    return { name: cat.name, value: Number(avg.toFixed(1)) };
+  });
 
   const filteredFeedbacks = allFeedbacks.filter(f => {
     const matchesSemester = semesterFilter === 'all' || f.semester === semesterFilter;
-    const matchesFaculty = facultyFilter === 'all' || f.facultyId === facultyFilter;
-    const facultyMember = allFaculty.find(fac => fac.id === f.facultyId);
+    
+    // Safely extract facultyId even if it's null or a populated object
+    const fid = f.facultyId ? (typeof f.facultyId === 'object' ? (f.facultyId as any)._id || (f.facultyId as any).id : f.facultyId) : null;
+    const matchesFaculty = facultyFilter === 'all' || fid === facultyFilter || (fid && fid.toString() === facultyFilter.toString());
+    
+    const facultyMember = fid ? allFaculty.find(fac => (fac.id === fid || fac._id === fid)) : null;
     const matchesSearch = !searchQuery || 
       facultyMember?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.comments?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -57,7 +68,7 @@ const FeedbackAnalysis: React.FC = () => {
   });
 
   const getFacultyName = (facultyId: string) => {
-    return allFaculty.find(f => f.id === facultyId)?.name || 'Unknown';
+    return allFaculty.find(f => (f.id === facultyId || f._id === facultyId))?.name || 'Unknown';
   };
 
   const getAverageRating = (ratings: Feedback['ratings']) => {
@@ -103,7 +114,9 @@ const FeedbackAnalysis: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Faculty</SelectItem>
-                  {faculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                  {allFaculty.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -112,36 +125,52 @@ const FeedbackAnalysis: React.FC = () => {
         <div className="space-y-4">
           <h2 className="text-xl font-serif font-semibold text-foreground">Recent Feedbacks ({filteredFeedbacks.length})</h2>
           <div className="grid gap-4">
-            {filteredFeedbacks.map((feedback) => (
-              <div key={feedback.id} className="dashboard-card hover:shadow-card-hover transition-shadow">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-foreground">{getFacultyName(feedback.facultyId)}</span>
-                      <Badge variant="outline">{feedback.courseId}</Badge>
-                      <Badge variant="secondary">{feedback.semester}</Badge>
+            {filteredFeedbacks.length === 0 ? (
+              <p className="text-center text-muted-foreground py-10">No feedbacks found matching your criteria.</p>
+            ) : (
+              filteredFeedbacks.map((feedback) => (
+                <div key={feedback.id || (feedback as any)._id} className="dashboard-card hover:shadow-card-hover transition-shadow">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground">
+                          {typeof feedback.facultyId === 'object' && feedback.facultyId !== null
+                            ? (feedback.facultyId as any).name
+                            : (feedback.facultyId ? getFacultyName(feedback.facultyId as string) : 'Unknown')}
+                        </span>
+                        <Badge variant="outline">
+                          {typeof feedback.courseId === 'object' && feedback.courseId !== null
+                            ? (feedback.courseId as any).code
+                            : (feedback.courseId || 'No Course')}
+                        </Badge>
+                        <Badge variant="secondary">{feedback.semester}</Badge>
+                      </div>
+                      {feedback.comments && <p className="text-muted-foreground">"{feedback.comments}"</p>}
+                      <p className="text-xs text-muted-foreground">
+                        {feedback.submittedAt ? (
+                          `Submitted on ${format(new Date(feedback.submittedAt), 'MMM dd, yyyy')}`
+                        ) : (
+                          'Recently submitted'
+                        )}
+                        {feedback.isAnonymous && ' • Anonymous'}
+                      </p>
                     </div>
-                    {feedback.comments && <p className="text-muted-foreground">"{feedback.comments}"</p>}
-                    <p className="text-xs text-muted-foreground">
-                      Submitted on {format(new Date(feedback.submittedAt), 'MMM dd, yyyy')}
-                      {feedback.isAnonymous && ' • Anonymous'}
-                    </p>
+                    <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5">
+                      <Star className="h-4 w-4 fill-warning text-warning" />
+                      <span className="font-semibold text-foreground">{getAverageRating(feedback.ratings)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5">
-                    <Star className="h-4 w-4 fill-warning text-warning" />
-                    <span className="font-semibold text-foreground">{getAverageRating(feedback.ratings)}</span>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {Object.entries(feedback.ratings).slice(0, 4).map(([key, value]) => (
+                      <div key={key} className="text-center rounded-lg bg-muted/50 p-2">
+                        <p className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                        <p className="font-semibold text-foreground">{value.toFixed(1)}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {Object.entries(feedback.ratings).slice(0, 4).map(([key, value]) => (
-                    <div key={key} className="text-center rounded-lg bg-muted/50 p-2">
-                      <p className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                      <p className="font-semibold text-foreground">{value.toFixed(1)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

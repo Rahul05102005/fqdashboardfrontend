@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginCredentials, UserRole } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<boolean>;
@@ -11,8 +11,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-import api from '@/lib/api';
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -20,46 +18,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isLoading: true,
   });
 
-  useEffect(() => {
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
-        setAuthState({
-          user: profile,
-          isAuthenticated: !!profile,
-          isLoading: false,
-        });
-      } else {
-        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    });
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
-        setAuthState({
-          user: profile,
-          isAuthenticated: !!profile,
-          isLoading: false,
-        });
-      } else if (event === 'SIGNED_OUT') {
-        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    });
-
-    return () => { subscription.unsubscribe(); };
+    try {
+      const response = await api.get('/auth/me');
+      setAuthState({
+        user: response.data,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+    }
   }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
-    
     try {
       const response = await api.post('/auth/login', credentials);
-      const user = response.data;
+      const { token, ...user } = response.data;
       
-      localStorage.setItem('dashboard_user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
       setAuthState({
         user,
         isAuthenticated: true,
@@ -68,33 +61,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      setAuthState(prev => ({ ...prev, isLoading: false, user: null, isAuthenticated: false }));
       return false;
     }
   }, []);
 
   const signup = useCallback(async (credentials: LoginCredentials & { name: string; role?: UserRole }): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
-    const { error } = await supabase.auth.signUp({
-      email: credentials.email,
-      password: credentials.password,
-      options: {
-        data: {
-          name: credentials.name,
-          role: credentials.role || 'student',
-        },
-      },
-    });
-    if (error) {
+    try {
+      const response = await api.post('/auth/register', {
+        ...credentials,
+        department: 'General' // Default for now
+      });
+      const { token, ...user } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      setAuthState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      return true;
+    } catch (error) {
+      console.error('Signup error:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
-    return true;
   }, []);
 
-  const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
   }, []);
 
   const hasRole = useCallback((role: UserRole): boolean => {

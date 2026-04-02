@@ -15,10 +15,16 @@ const RecentFeedback: React.FC<RecentFeedbackProps> = ({
   faculty,
   className,
 }) => {
-  const getFacultyName = (facultyId: string) => {
-    const f = faculty.find(fac => fac.id === facultyId);
+  const getFacultyId = (fid: any) => fid ? (typeof fid === 'object' ? fid._id || fid.id : fid) : null;
+
+  const getFacultyName = (facultyId: any) => {
+    const id = getFacultyId(facultyId);
+    if (!id) return 'Unknown Faculty';
+    const f = faculty.find(fac => fac.id === id || fac._id === id);
+    if (!f && typeof facultyId === 'object' && facultyId.name) return facultyId.name;
     return f?.name || 'Unknown Faculty';
   };
+
 
   const getAverageRating = (ratings: Feedback['ratings']) => {
     const values = Object.values(ratings);
@@ -35,7 +41,14 @@ const RecentFeedback: React.FC<RecentFeedbackProps> = ({
         <MessageSquare className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="space-y-4">
-        {feedbacks.slice(0, 5).map((feedback) => (
+        {feedbacks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground italic">
+            <MessageSquare className="h-8 w-8 mb-2 opacity-20" />
+            <p className="text-sm">No feedback received for this selection yet.</p>
+          </div>
+        ) : (
+          feedbacks.slice(0, 5).map((feedback) => (
+
           <div
             key={feedback.id}
             className="rounded-lg border border-border p-4 transition-all hover:bg-muted/30"
@@ -46,8 +59,11 @@ const RecentFeedback: React.FC<RecentFeedbackProps> = ({
                   {getFacultyName(feedback.facultyId)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {feedback.courseId} • {feedback.semester}
+                  {typeof feedback.courseId === 'object' && feedback.courseId !== null 
+                    ? (feedback.courseId as any).code 
+                    : feedback.courseId} • {feedback.semester}
                 </p>
+
               </div>
               <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
@@ -66,8 +82,10 @@ const RecentFeedback: React.FC<RecentFeedbackProps> = ({
               {format(new Date(feedback.submittedAt), 'MMM dd, yyyy • HH:mm')}
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
+
     </div>
   );
 };

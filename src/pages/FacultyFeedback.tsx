@@ -37,20 +37,25 @@ const FacultyFeedback: React.FC = () => {
     const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth();
     const yearNum = parseInt(year);
 
-    const facultyFeedbacks = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
-    const feedbacksToFilter = facultyFeedbacks.length > 0 ? facultyFeedbacks : allFeedbacks;
+    const facultyFeedbacks = allFeedbacks.filter(f => {
+      const fid = f.facultyId ? (typeof f.facultyId === 'object' ? (f.facultyId as any)._id || (f.facultyId as any).id : f.facultyId) : null;
+      return fid === currentFaculty?.id || fid === currentFaculty?._id;
+    });
 
-    return feedbacksToFilter.filter(f => {
+    return facultyFeedbacks.filter(f => {
       const d = new Date(f.submittedAt);
       return d.getMonth() === monthIndex && d.getFullYear() === yearNum;
     });
-  }, [selectedMonth, currentFaculty.id, allFeedbacks]);
+  }, [selectedMonth, currentFaculty?.id, currentFaculty?._id, allFeedbacks]);
 
   // Use all faculty feedbacks if filtered returns empty for stats display
   const allFacultyFeedbacks = useMemo(() => {
-    const fb = allFeedbacks.filter(f => f.facultyId === currentFaculty.id);
-    return fb.length > 0 ? fb : allFeedbacks;
-  }, [currentFaculty.id, allFeedbacks]);
+    return allFeedbacks.filter(f => {
+      const fid = f.facultyId ? (typeof f.facultyId === 'object' ? (f.facultyId as any)._id || (f.facultyId as any).id : f.facultyId) : null;
+      return fid === currentFaculty?.id || fid === currentFaculty?._id;
+    });
+  }, [currentFaculty?.id, currentFaculty?._id, allFeedbacks]);
+
 
   const displayFeedbacks = filteredFeedbacks.length > 0 ? filteredFeedbacks : allFacultyFeedbacks;
 
@@ -67,10 +72,10 @@ const FacultyFeedback: React.FC = () => {
   };
 
   // Calculate dynamic stats based on month
-  const feedbackCount = filteredFeedbacks.length;
+  const feedbackCount = filteredFeedbacks?.length;
   const avgRating = useMemo(() => {
     const vals = Object.values(categoryAverages);
-    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+    return (vals.reduce((a, b) => a + b, 0) / vals?.length).toFixed(1);
   }, [categoryAverages]);
 
   const positivePct = useMemo(() => {
@@ -112,7 +117,7 @@ const FacultyFeedback: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Feedbacks"
-            value={feedbackCount > 0 ? feedbackCount : currentFaculty.totalFeedbacks}
+            value={feedbackCount > 0 ? feedbackCount : currentFaculty?.totalFeedbacks}
             subtitle={feedbackCount > 0 ? selectedMonth : 'All time'}
             icon={MessageSquare}
           />

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+ import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import FacultyTable from '@/components/dashboard/FacultyTable';
 import { mockCourses } from '@/data/mockData';
 import { FacultyProfile } from '@/types';
 import { Search, Plus, Filter, Download, Save } from 'lucide-react';
 import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
+import { useCourseStore } from '@/hooks/useCourseStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +40,8 @@ import { Textarea } from '@/components/ui/textarea';
 
 const FacultyManagement: React.FC = () => {
   const { faculty, addFaculty: addFacultyToStore, updateFaculty, deleteFaculty: deleteFacultyFromStore } = useFacultyWithFeedback();
+  const { courses: allCourses } = useCourseStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,8 +80,8 @@ const FacultyManagement: React.FC = () => {
   });
 
   const filteredFaculty = faculty.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (f.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (f.email || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDepartment = departmentFilter === 'all' || f.department === departmentFilter;
     const matchesStatus = statusFilter === 'all' || f.status === statusFilter;
     return matchesSearch && matchesDepartment && matchesStatus;
@@ -100,10 +103,13 @@ const FacultyManagement: React.FC = () => {
       designation: f.designation,
       qualification: f.qualification,
       experience: String(f.experience),
-      specialization: f.specialization.join(', '),
-      coursesAssigned: f.coursesAssigned.join(', '),
+       specialization: f.specialization.join(', '),
+      coursesAssigned: (f.coursesAssigned || []).map((c: any) => 
+        typeof c === 'object' ? c.code : (allCourses.find(ac => ac.id === c || ac._id === c)?.code || c)
+      ).join(', '),
       status: f.status,
     });
+
     setIsEditDialogOpen(true);
   };
 
@@ -122,8 +128,15 @@ const FacultyManagement: React.FC = () => {
         qualification: editFaculty.qualification.trim() || 'Not specified',
         experience: parseInt(editFaculty.experience) || 0,
         specialization: editFaculty.specialization ? editFaculty.specialization.split(',').map(s => s.trim()).filter(Boolean) : [],
+        coursesAssigned: editFaculty.coursesAssigned 
+          ? editFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean).map(code => {
+              const matched = allCourses.find(c => c.code.toLowerCase() === code.toLowerCase());
+              return matched ? matched._id || matched.id : code;
+            })
+          : [],
         status: editFaculty.status,
       });
+
       setIsEditDialogOpen(false);
       toast.success('Faculty updated successfully', { description: `${editFaculty.name.trim()}'s profile has been updated.` });
     } catch (error) {
@@ -142,11 +155,24 @@ const FacultyManagement: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (deletingFaculty) {
-      const deleted = deletingFaculty;
+      const facultyToRestore = { ...deletingFaculty };
       try {
-        await deleteFacultyFromStore(deleted.id);
+        await deleteFacultyFromStore(facultyToRestore.id);
         toast.success('Faculty deleted', {
-          description: `${deleted.name} has been removed.`,
+          description: `${facultyToRestore.name} has been removed.`,
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              try {
+                // Remove id and _id from restore data if they exist to avoid conflict if backend generates new
+                const { id, _id, ...restoreData } = facultyToRestore;
+                await addFacultyToStore(restoreData);
+                toast.success('Faculty restored');
+              } catch (err) {
+                toast.error('Failed to restore faculty');
+              }
+            }
+          }
         });
       } catch (error) {
         toast.error('Failed to delete faculty');
@@ -208,8 +234,15 @@ const FacultyManagement: React.FC = () => {
           : [],
         joiningDate: new Date().toISOString(),
         status: newFaculty.status,
+        coursesAssigned: newFaculty.coursesAssigned 
+          ? newFaculty.coursesAssigned.split(',').map(s => s.trim()).filter(Boolean).map(code => {
+              const matched = allCourses.find(c => c.code.toLowerCase() === code.toLowerCase());
+              return matched ? matched._id || matched.id : code;
+            })
+          : [],
         userId: "660a1b2c3d4e5f67890abcde", // Placeholder User ID for demo
       };
+
 
       await addFacultyToStore(facultyData);
       setIsAddDialogOpen(false);
@@ -328,13 +361,23 @@ const FacultyManagement: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="add-department">Department *</Label>
-                  <Input
-                    id="add-department"
-                    placeholder="e.g. Computer Science"
+                  <Select
                     value={newFaculty.department}
-                    onChange={(e) => setNewFaculty(prev => ({ ...prev, department: e.target.value }))}
-                  />
+                    onValueChange={(val) => setNewFaculty(prev => ({ ...prev, department: val }))}
+                  >
+                    <SelectTrigger id="add-department">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Computer Science">Computer Science</SelectItem>
+                      <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                      <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                      <SelectItem value="General Sciences">General Sciences</SelectItem>
+                      <SelectItem value="Humanities">Humanities</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="add-designation">Designation *</Label>
                   <Select
@@ -487,8 +530,10 @@ const FacultyManagement: React.FC = () => {
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Assigned Courses</Label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedFaculty.coursesAssigned.map(course => (
-                      <Badge key={course} variant="outline">{course}</Badge>
+                    {selectedFaculty.coursesAssigned.map((course: any) => (
+                      <Badge key={typeof course === 'object' ? course._id : course} variant="outline">
+                        {typeof course === 'object' ? course.code : course}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -527,12 +572,23 @@ const FacultyManagement: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-department">Department *</Label>
-                  <Input
-                    id="edit-department"
+                  <Select
                     value={editFaculty.department}
-                    onChange={(e) => setEditFaculty(prev => ({ ...prev, department: e.target.value }))}
-                  />
+                    onValueChange={(val) => setEditFaculty(prev => ({ ...prev, department: val }))}
+                  >
+                    <SelectTrigger id="edit-department">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Computer Science">Computer Science</SelectItem>
+                      <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                      <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                      <SelectItem value="General Sciences">General Sciences</SelectItem>
+                      <SelectItem value="Humanities">Humanities</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="edit-designation">Designation *</Label>
                   <Select

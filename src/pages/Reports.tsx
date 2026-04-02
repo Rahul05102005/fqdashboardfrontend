@@ -29,14 +29,14 @@ const Reports: React.FC = () => {
   const yearFeedbacks = useMemo(() => allFeedbacks.filter(f => f.academicYear === academicYear), [academicYear, allFeedbacks]);
 
   const departmentChartData = departmentStats.map(d => ({
-    name: d.department.split(' ')[0],
-    rating: d.averageRating,
+    name: (d.department || 'Unknown').split(' ')[0],
+    rating: d.averageRating || 0,
   }));
 
   const trendChartData = semesterTrends.map(t => ({
-    name: t.semester,
-    value: t.averageRating,
-    value2: t.qualityScore / 20,
+    name: t.semester || 'Unknown',
+    value: t.averageRating || 0,
+    value2: (t.qualityScore || 0) / 20,
   }));
 
   const handleExport = (type: string) => {
@@ -48,19 +48,36 @@ const Reports: React.FC = () => {
 
     if (type === 'Faculty Performance Report') {
       const headers = [['Name', 'Department', 'Designation', 'Avg Rating', 'Feedbacks', 'Status']];
-      const rows = faculty.map(f => [f.name, f.department, f.designation, f.averageRating.toFixed(2), String(f.totalFeedbacks), f.status]);
+      const rows = faculty.map(f => [
+        f.name || 'Unknown',
+        f.department || 'N/A',
+        f.designation || 'N/A',
+        (f.averageRating || 0).toFixed(2),
+        String(f.totalFeedbacks || 0),
+        f.status || 'active'
+      ]);
       autoTable(doc, { head: headers, body: rows, startY: 36 });
       doc.save(`Faculty_Performance_Report_${academicYear}.pdf`);
       toast.success('Faculty Performance Report downloaded as PDF');
     } else if (type === 'Semester Summary Report') {
       const headers = [['Semester', 'Average Rating', 'Feedback Count', 'Quality Score']];
-      const rows = semesterTrends.map(t => [t.semester, t.averageRating.toFixed(2), String(t.feedbackCount), String(t.qualityScore)]);
+      const rows = semesterTrends.map(t => [
+        t.semester || 'Unknown',
+        (t.averageRating || 0).toFixed(2),
+        String(t.feedbackCount || 0),
+        String(t.qualityScore || 0)
+      ]);
       autoTable(doc, { head: headers, body: rows, startY: 36 });
       doc.save(`Semester_Summary_Report_${academicYear}.pdf`);
       toast.success('Semester Summary Report downloaded as PDF');
     } else if (type === 'Department Analysis') {
       const headers = [['Department', 'Faculty Count', 'Average Rating', 'Feedback Count']];
-      const rows = departmentStats.map(d => [d.department, String(d.facultyCount), d.averageRating.toFixed(2), String(d.feedbackCount)]);
+      const rows = departmentStats.map(d => [
+        d.department || 'Unknown',
+        String(d.facultyCount || 0),
+        (d.averageRating || 0).toFixed(2),
+        String(d.feedbackCount || 0)
+      ]);
       autoTable(doc, { head: headers, body: rows, startY: 36 });
       doc.save(`Department_Analysis_${academicYear}.pdf`);
       toast.success('Department Analysis downloaded as PDF');

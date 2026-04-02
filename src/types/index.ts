@@ -13,6 +13,7 @@ export interface User {
 }
 
 export interface FacultyProfile {
+  _id: string;
   id: string;
   userId: string;
   name: string;
@@ -25,12 +26,14 @@ export interface FacultyProfile {
   joiningDate: string;
   status: 'active' | 'inactive' | 'on-leave';
   avatar?: string;
-  coursesAssigned: string[];
+  coursesAssigned: (string | Course)[];
   averageRating: number;
   totalFeedbacks: number;
 }
 
+
 export interface Course {
+  _id?: string;
   id: string;
   code: string;
   name: string;
@@ -39,10 +42,12 @@ export interface Course {
   department: string;
 }
 
+
 export interface Feedback {
   id: string;
-  facultyId: string;
-  courseId: string;
+  facultyId: string | { _id: string; name: string; email: string; department: string } | null;
+  courseId: string | { _id: string; code: string; name: string } | null;
+  studentId?: string | { _id: string; name: string; email: string } | null;
   semester: string;
   academicYear: string;
   ratings: FeedbackRatings;
@@ -50,6 +55,9 @@ export interface Feedback {
   submittedAt: string;
   isAnonymous: boolean;
 }
+
+
+
 
 export interface FeedbackRatings {
   teachingEffectiveness: number;
@@ -118,6 +126,7 @@ export interface AuthState {
 export interface LoginCredentials {
   email: string;
   password: string;
+  role?: UserRole;
 }
 
 export interface ApiResponse<T> {

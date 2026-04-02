@@ -8,12 +8,15 @@ import { FacultyProfile } from '@/types';
  * dynamically computed from the feedback store (now from DB).
  */
 export function useFacultyWithFeedback() {
-  const { faculty, loading: facultyLoading, ...rest } = useFacultyStore();
-  const { feedbacks, loading: feedbackLoading } = useFeedbackStore();
+  const { faculty, isLoading: facultyLoading, ...rest } = useFacultyStore();
+  const { feedbacks, isLoading: feedbackLoading } = useFeedbackStore();
 
   const enrichedFaculty: FacultyProfile[] = useMemo(() => {
     return faculty.map(f => {
-      const fbs = feedbacks.filter(fb => fb.facultyId === f.id);
+      const fbs = feedbacks.filter(fb => {
+        const fbFacultyId = fb.facultyId ? (typeof fb.facultyId === 'object' ? (fb.facultyId as any)._id || (fb.facultyId as any).id : fb.facultyId) : null;
+        return fbFacultyId && (fbFacultyId === f.id || fbFacultyId === f._id);
+      });
       if (fbs.length === 0) return f;
       const totalFeedbacks = fbs.length;
       const avgRatings = fbs.map(fb => {

@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import RadarMetrics from '@/components/dashboard/RadarMetrics';
 import TrendChart from '@/components/dashboard/TrendChart';
 import { useAuth } from '@/context/AuthContext';
-import { mockMetrics, mockSemesterTrends } from '@/data/mockData';
+import { mockSemesterTrends } from '@/data/mockData';
 import { useFacultyWithFeedback } from '@/hooks/useFacultyWithFeedback';
-import { Award, Target, TrendingUp, BookOpen, Users, Clock } from 'lucide-react';
+import { useMetricsStore } from '@/hooks/useMetricsStore';
 import StatCard from '@/components/dashboard/StatCard';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -16,15 +17,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Award, Target, TrendingUp, BookOpen, Users, Clock } from 'lucide-react';
 
 const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
 
 const FacultyMetrics: React.FC = () => {
   const { user } = useAuth();
   const { faculty } = useFacultyWithFeedback();
-  const currentFaculty = faculty.find(f => f.userId === user?.id) || faculty[0];
-  const currentMetrics = mockMetrics[0]; // metrics still from mock for now
+  const { metrics, fetchMetricsByFaculty, isLoading } = useMetricsStore();
   const [selectedSemester, setSelectedSemester] = useState('Semester 1');
+
+  const currentFaculty = faculty.find(f => f.userId === user?.id) || faculty[0];
+
+  useEffect(() => {
+    if (currentFaculty?.id || currentFaculty?._id) {
+      fetchMetricsByFaculty(currentFaculty.id || currentFaculty._id!);
+    }
+  }, [currentFaculty?.id, currentFaculty?._id, fetchMetricsByFaculty]);
+
+  // Find metric for selected semester
+  const semesterMetric = metrics.find(m => m.semester === selectedSemester);
+  
+  // Overall metrics data
+  const currentMetrics = semesterMetric || {
+    teachingQualityScore: 0,
+    researchContribution: 0,
+    syllabusCompletion: 0,
+    attendanceCompliance: 0,
+    studentPassRate: 0,
+    innovativeTeaching: 0,
+    overallScore: 0
+  };
+
+  const hasData = !!semesterMetric;
 
   const radarData = [
     { subject: 'Teaching', score: currentMetrics.teachingQualityScore, fullMark: 100 },
@@ -35,10 +60,9 @@ const FacultyMetrics: React.FC = () => {
     { subject: 'Innovation', score: currentMetrics.innovativeTeaching, fullMark: 100 },
   ];
 
-  const trendData = mockSemesterTrends.map(t => ({
-    name: t.semester,
-    value: t.qualityScore,
-  }));
+  const trendData = metrics.length > 0 
+    ? metrics.map(m => ({ name: m.semester, value: m.overallScore }))
+    : mockSemesterTrends.map(t => ({ name: t.semester, value: t.qualityScore }));
 
   const detailedMetrics = [
     { icon: BookOpen, label: 'Teaching Quality', value: currentMetrics.teachingQualityScore, description: 'Based on student feedback and peer evaluations' },
@@ -78,18 +102,25 @@ const FacultyMetrics: React.FC = () => {
         </div>
 
         {/* Overall Score Card */}
-        <div className="dashboard-card gradient-primary text-primary-foreground">
+        <div className={cn(
+          "dashboard-card transition-all duration-300",
+          hasData ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+        )}>
           <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
             <div>
               <h2 className="text-xl font-serif font-bold">Overall Quality Score</h2>
-              <p className="text-primary-foreground/80">{selectedSemester} Evaluation</p>
+              <p className={cn(hasData ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                {selectedSemester} {hasData ? 'Evaluation' : ' - No Data Available'}
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
-                <p className="text-5xl font-bold">{currentMetrics.overallScore}%</p>
-                <Badge className="mt-2 bg-white/20 text-white border-white/30">
-                  {getScoreBadge(currentMetrics.overallScore).label}
-                </Badge>
+                <p className="text-5xl font-bold">{hasData ? `${currentMetrics.overallScore}%` : '--%'}</p>
+                {hasData && (
+                  <Badge className="mt-2 bg-white/20 text-white border-white/30">
+                    {getScoreBadge(currentMetrics.overallScore).label}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
